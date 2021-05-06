@@ -90,6 +90,11 @@ CachedResourceLoader::CachedResourceLoader(Document* document)
     , m_blockNetworkImage(false)
 #endif
 {
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+    /// M: improve gif animation performance
+    memoryCache()->addCachedResourceLoader(this);
+#endif
 }
 
 CachedResourceLoader::~CachedResourceLoader()
@@ -101,6 +106,11 @@ CachedResourceLoader::~CachedResourceLoader()
     DocumentResourceMap::iterator end = m_documentResources.end();
     for (DocumentResourceMap::iterator it = m_documentResources.begin(); it != end; ++it)
         it->second->setOwningCachedResourceLoader(0);
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+    /// M: improve gif animation performance
+    memoryCache()->removeCachedResourceLoader(this);
+#endif
 
     // Make sure no requests still point to this CachedResourceLoader
     ASSERT(m_requestCount == 0);
@@ -799,5 +809,21 @@ void CachedResourceLoader::printPreloadStats()
         printf("IMAGES:  %d (%d hits, hit rate %d%%)\n", images, images - imageMisses, (images - imageMisses) * 100 / images);
 }
 #endif
-    
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+void CachedResourceLoader::startAnimation(const IntRect& visibleScreenRect)
+{
+    DocumentResourceMap::iterator end = m_documentResources.end();
+    for (DocumentResourceMap::iterator it = m_documentResources.begin(); it != end; ++it) {
+        CachedResource* resource = it->second.get();
+        if (resource->type() == CachedResource::ImageResource) {
+            CachedImage* image = const_cast<CachedImage*>(static_cast<const CachedImage*>(resource));
+            image->startAnimation(visibleScreenRect);
+        }
+    }
+}
+/// @}
+#endif
+
 }

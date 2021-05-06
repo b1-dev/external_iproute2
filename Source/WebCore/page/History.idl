@@ -36,7 +36,8 @@ module window {
         OmitConstructor
     ] History {
         readonly attribute unsigned long length;
-
+        /// M: enable HTML5 History.
+        readonly attribute [Conditional=HTML5_HISTORY_API, CachedAttribute, Custom] any state;
         [DoNotCheckDomainSecurity, CallWith=ScriptExecutionContext] void back();
         [DoNotCheckDomainSecurity, CallWith=ScriptExecutionContext] void forward();
         [DoNotCheckDomainSecurity, CallWith=ScriptExecutionContext] void go(in long distance);

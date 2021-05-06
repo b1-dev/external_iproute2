@@ -26,7 +26,14 @@
 #include "content/content_detector.h"
 #include "PlatformString.h"
 
+#if ENABLE(IMPROVE_PHONE_DETECTION)
+/// M: Improve phone detection.
+#define NAVIGATION_MAX_PHONE_LENGTH 20
+#define NAVIGATION_MIN_PHONE_LENGTH 7
+#define NAVIGATION_ALLOW_MAX_CONTINUE_DIGIT_LENGTH 11
+#else
 #define NAVIGATION_MAX_PHONE_LENGTH 14
+#endif
 
 struct FindState {
     int mStartResult;

@@ -83,6 +83,12 @@
 // Duration to show the pressed cursor ring
 #define PRESSED_STATE_DURATION 400
 
+/// M: Add for theme manager
+#if ENABLE(MTK_THEME_MANAGER)
+#define THEME_TEXT_SELECTION_COLOR_NAME "browser_text_selection"
+#define THEME_CURSOR_RING_COLOR_NAME "browser_cursor_ring"
+#endif
+
 namespace android {
 
 static jfieldID gWebViewField;
@@ -132,6 +138,10 @@ struct JavaGlue {
     jfieldID    m_quadFP2;
     jfieldID    m_quadFP3;
     jfieldID    m_quadFP4;
+/// M: Add for theme manager
+#if ENABLE(MTK_THEME_MANAGER)
+    jmethodID   m_getThemeColor;
+#endif
     AutoJObject object(JNIEnv* env) {
         return getRealObject(env, m_obj);
     }
@@ -153,6 +163,10 @@ WebView(JNIEnv* env, jobject javaWebView, int viewImpl, WTF::String drawableDir,
     m_javaGlue.m_postInvalidateDelayed = GetJMethod(env, clazz,
         "viewInvalidateDelayed", "(JIIII)V");
     m_javaGlue.m_pageSwapCallback = GetJMethod(env, clazz, "pageSwapCallback", "(Z)V");
+/// M: Add for theme manager
+#if ENABLE(MTK_THEME_MANAGER)
+    m_javaGlue.m_getThemeColor = GetJMethod(env, clazz, "getThemeColor", "(Ljava/lang/String;)I");
+#endif
     env->DeleteLocalRef(clazz);
 
     jclass rectClass = env->FindClass("android/graphics/Rect");
@@ -182,6 +196,14 @@ WebView(JNIEnv* env, jobject javaWebView, int viewImpl, WTF::String drawableDir,
     m_isDrawingPaused = false;
 #if USE(ACCELERATED_COMPOSITING)
     m_glWebViewState = 0;
+#endif
+
+/// M: Add for theme manager
+#if ENABLE(MTK_THEME_MANAGER)
+    jstring jTextSelectionName = wtfStringToJstring(env, THEME_TEXT_SELECTION_COLOR_NAME);
+    jstring jCursorRingName = wtfStringToJstring(env, THEME_CURSOR_RING_COLOR_NAME);
+    m_themeTextSelectionColor = env->CallIntMethod(javaWebView, m_javaGlue.m_getThemeColor, jTextSelectionName);
+    m_themeCursorRingColor = env->CallIntMethod(javaWebView, m_javaGlue.m_getThemeColor, jCursorRingName);
 #endif
 }
 
@@ -266,6 +288,11 @@ int drawGL(WebCore::IntRect& invScreenRect, WebCore::IntRect* invalRect,
         TilesManager::instance()->setHighEndGfx(m_isHighEndGfx);
         m_glWebViewState = new GLWebViewState();
         m_glWebViewState->setBaseLayer(m_baseLayer, false, true);
+/// M: Add for theme manager
+#if ENABLE(MTK_THEME_MANAGER)
+        m_glWebViewState->glExtras()->setThemeTextSelectionColor(m_themeTextSelectionColor);
+        m_glWebViewState->glExtras()->setThemeCursorRingColor(m_themeCursorRingColor);
+#endif
     }
 
     DrawExtra* extra = getDrawExtra((DrawExtras) extras);
@@ -748,6 +775,11 @@ private: // local state for WebView
 #endif
     SkRect m_visibleContentRect;
     bool m_isHighEndGfx;
+    /// M: Add for theme manager
+#if ENABLE(MTK_THEME_MANAGER)
+    int m_themeTextSelectionColor;
+    int m_themeCursorRingColor;
+#endif
 }; // end of WebView class
 
 

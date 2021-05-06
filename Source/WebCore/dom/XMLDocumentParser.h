@@ -206,6 +206,8 @@ namespace WebCore {
 #endif
 #if ENABLE(WML)
         bool isWMLDocument() const;
+        bool isFirstChunk() const { return m_firstChunk; }
+        void setFirstChunk(bool first) { m_firstChunk = first; }
 #endif
 
         static bool parseDocumentFragment(const String&, DocumentFragment*, Element* parent = 0, FragmentScriptingPermission = FragmentScriptingAllowed);
@@ -315,6 +317,9 @@ public:
         bool m_parserPaused;
         bool m_requestingScript;
         bool m_finishCalled;
+#if ENABLE(WML)
+        bool m_firstChunk;    // Workaround for xml declaration not at start of document.
+#endif
 
         int m_errorCount;
         TextPosition1 m_lastErrorPosition;

@@ -102,6 +102,8 @@ public:
 #if ENABLE(WCSS)
     virtual InputElementData data() const { return m_data; }
 #endif
+    /// M: Add WMLInputElement maxLength
+    virtual int maxLength() const;
 
 private:
     friend class WMLCardElement;

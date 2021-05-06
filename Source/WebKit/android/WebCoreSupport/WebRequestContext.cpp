@@ -69,7 +69,7 @@ WebRequestContext::WebRequestContext(bool isPrivateBrowsing)
     set_cookie_policy(cookieJar);
 
     // Also hardcoded in FrameLoader.java
-    set_accept_charset("utf-8, iso-8859-1, utf-16, *;q=0.7");
+    set_accept_charset("utf-8, utf-16, *;q=0.7");
 }
 
 WebRequestContext::~WebRequestContext()

@@ -204,6 +204,10 @@ private:
 
     static TilesManager* gInstance;
 
+    /// M : to avoid create multiple TilesManager @{
+    static android::Mutex gInstanceLock;
+    /// M: @}
+
     ShaderProgram m_shader;
     TransferQueue* m_queue;
 

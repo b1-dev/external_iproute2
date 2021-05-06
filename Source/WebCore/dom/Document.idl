@@ -341,6 +341,10 @@ module core {
         boolean isHTMLDocument();
 #endif
 
+        /// M: Page Visibility API.
+        readonly attribute [Conditional=PAGE_VISIBILITY_API] DOMString webkitVisibilityState;
+        readonly attribute [Conditional=PAGE_VISIBILITY_API] boolean webkitHidden;
+
     };
 
 }

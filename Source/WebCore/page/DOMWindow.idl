@@ -523,6 +523,8 @@ module window {
         attribute MouseEventConstructor MouseEvent;
         attribute MutationEventConstructor MutationEvent;
         attribute OverflowEventConstructor OverflowEvent;
+        /// M: enable HTML5 History.
+        attribute [Conditional=HTML5_HISTORY_API] PopStateEventConstructor PopStateEvent;
         attribute PageTransitionEventConstructor PageTransitionEvent;
         attribute ProgressEventConstructor ProgressEvent;
         attribute TextEventConstructor TextEvent;

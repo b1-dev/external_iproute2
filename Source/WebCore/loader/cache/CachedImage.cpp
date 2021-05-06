@@ -48,9 +48,19 @@
 #include "SVGImage.h"
 #endif
 
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance
+#include "ImageSource.h"
+#endif
+
 using std::max;
 
 namespace WebCore {
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance
+bool CachedImage::m_enableGifAnimation = true;
+#endif
 
 CachedImage::CachedImage(const String& url)
     : CachedResource(url, ImageResource)
@@ -60,6 +70,11 @@ CachedImage::CachedImage(const String& url)
     , m_autoLoadWasPreventedBySettings(false)
 {
     setStatus(Unknown);
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+    /// M: improve gif animation performance
+    m_visibleScreenRect = IntRect(0 , 0, 0, 0);
+#endif
 }
 
 CachedImage::CachedImage(Image* image)
@@ -71,6 +86,11 @@ CachedImage::CachedImage(Image* image)
 {
     setStatus(Cached);
     setLoading(false);
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+    /// M: improve gif animation performance
+    m_visibleScreenRect = IntRect(0 , 0, 0, 0);
+#endif
 }
 
 CachedImage::~CachedImage()
@@ -365,7 +385,14 @@ bool CachedImage::shouldPauseAnimation(const Image* image)
 {
     if (image != m_image)
         return false;
-    
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+    /// M: improve gif animation performance @{
+    if (isGifImage() && !m_enableGifAnimation)
+        return true;
+    /// @}
+#endif
+
     CachedResourceClientWalker w(m_clients);
     while (CachedResourceClient* c = w.next()) {
         if (c->willRenderImage(this))
@@ -386,5 +413,27 @@ void CachedImage::changedInRect(const Image* image, const IntRect& rect)
     if (image == m_image)
         notifyObservers(&rect);
 }
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+bool CachedImage::isGifImage() {
+    if (m_image != NULL && m_image->filenameExtension() != NULL && m_image->filenameExtension().lower() == "gif")
+        return true;
+    return false;
+}
+
+void CachedImage::startAnimation(const IntRect& visibleScreenRect)
+{
+    if (m_image == NULL)
+        return;
+    
+    if (m_image->filenameExtension().lower() != "gif")
+        return;
+
+    m_visibleScreenRect = visibleScreenRect;
+    m_image->startAnimation();
+}
+/// @}
+#endif
 
 } //namespace WebCore

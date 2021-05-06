@@ -84,6 +84,13 @@ void DOMApplicationCache::swapCache(ExceptionCode& ec)
         ec = INVALID_STATE_ERR;
 }
 
+void DOMApplicationCache::abort()
+{
+    ApplicationCacheHost* cacheHost = applicationCacheHost();
+    if (cacheHost)
+        cacheHost->abort();
+}
+
 ScriptExecutionContext* DOMApplicationCache::scriptExecutionContext() const
 {
     if (m_frame)

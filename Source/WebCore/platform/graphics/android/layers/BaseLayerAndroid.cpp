@@ -353,6 +353,10 @@ Image* FixedBackgroundImageLayerAndroid::GetCachedImage(PassRefPtr<RenderStyle> 
 
     CachedImage* cachedImage = static_cast<StyleCachedImage*>(styleImage)->cachedImage();
 
+    /// M: don't return image when image has error for ALPS00332818 @[
+    if (cachedImage->errorOccurred())
+        return 0;
+    /// M: @}
     Image* image = cachedImage->image();
 
     if (image && !image->nativeImageForCurrentFrame())

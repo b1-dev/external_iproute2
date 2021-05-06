@@ -321,6 +321,11 @@ void WMLInputElement::defaultEventHandler(Event* evt)
 
     if (renderer() && (evt->isMouseEvent() || evt->isDragEvent() || evt->isWheelEvent() || evt->type() == eventNames().blurEvent || evt->type() == eventNames().focusEvent))
         toRenderTextControlSingleLine(renderer())->forwardEvent(evt);
+
+    ///M: add. When has two input element, can't move second input element.
+    if (evt->type() == eventNames().webkitEditableContentChangedEvent && renderer() && renderer()->isTextControl()) {
+        toRenderTextControl(renderer())->subtreeHasChanged();
+    }
 }
 
 void WMLInputElement::cacheSelection(int start, int end)
@@ -489,10 +494,10 @@ bool WMLInputElement::isConformedToInputMask(UChar inChar, unsigned inputCharCou
         ok = !WTF::isASCIIUpper(inChar) && WTF::isASCIIPrintable(inChar);
         break;
     case 'M':
-        ok = WTF::isASCIIPrintable(inChar);
+        ok = WTF::isASCII(inChar) ? WTF::isASCIIPrintable(inChar) : true;
         break;
     case 'm':
-        ok = WTF::isASCIIPrintable(inChar);
+        ok = WTF::isASCII(inChar) ? WTF::isASCIIPrintable(inChar) : true;
         break;
     default:
         ok = (mask == inChar);
@@ -517,6 +522,12 @@ unsigned WMLInputElement::cursorPositionToMaskIndex(unsigned cursorPosition)
     } while (cursorPosition--);
  
     return index;
+}
+
+/// M: Add WMLInputElement maxLength
+int WMLInputElement::maxLength() const
+{
+    return m_data.maxLength();
 }
 
 }

@@ -90,7 +90,7 @@ void MediaPlayerPrivate::registerMediaEngine(MediaEngineRegistrar registrar)
 MediaPlayer::SupportsType MediaPlayerPrivate::supportsType(const String& type, const String& codecs)
 {
     if (WebViewCore::isSupportedMediaMimeType(type))
-        return MediaPlayer::MayBeSupported;
+        return MediaPlayer::IsSupported;
     return MediaPlayer::IsNotSupported;
 }
 

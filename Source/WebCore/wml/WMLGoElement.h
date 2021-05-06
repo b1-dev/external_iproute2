@@ -43,6 +43,9 @@ public:
     virtual void parseMappedAttribute(Attribute*);
     virtual void executeTask();
 
+    /// M: Add href for go element.
+    virtual KURL href() const;
+
 private:
     void preparePOSTRequest(ResourceRequest&, bool inSameDeck, const String& cacheControl);
     void prepareGETRequest(ResourceRequest&, const KURL&);

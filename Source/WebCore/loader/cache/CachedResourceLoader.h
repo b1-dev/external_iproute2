@@ -37,6 +37,11 @@
 #include <wtf/ListHashSet.h>
 #include <wtf/text/StringHash.h>
 
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance
+#include "IntRect.h"
+#endif
+
 namespace WebCore {
 
 class CachedCSSStyleSheet;
@@ -155,6 +160,13 @@ private:
     bool m_allowStaleResources : 1;
 #ifdef ANDROID_BLOCK_NETWORK_IMAGE
     bool m_blockNetworkImage : 1;
+#endif
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+public:
+    void startAnimation(const IntRect& visibleScreenRect);
+/// @}
 #endif
 };
 

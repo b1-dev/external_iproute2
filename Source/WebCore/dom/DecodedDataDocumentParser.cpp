@@ -29,6 +29,10 @@
 #include "DocumentWriter.h"
 #include "SegmentedString.h"
 #include "TextResourceDecoder.h"
+///M: add for wml
+#if ENABLE(WML)
+#include "Document.h"
+#endif
 
 namespace WebCore {
 
@@ -48,6 +52,19 @@ void DecodedDataDocumentParser::appendBytes(DocumentWriter* writer , const char*
         decoded += decoder->flush();
     if (decoded.isEmpty())
         return;
+
+        // M: Workaround for: XML Declaration allowed only at the start of the document.
+#if ENABLE(WML)
+        if(document()->isWMLDocument() && !writer->receivedData()) {
+            unsigned start = 0;
+            unsigned end = decoded.length() - 1;
+            
+            while (start <= end && isSpaceOrNewline(decoded[start]))
+                start++;
+            
+            decoded.remove(0, start);
+        }
+#endif
 
     writer->reportDataReceived();
 

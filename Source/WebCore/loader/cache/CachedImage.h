@@ -101,6 +101,20 @@ private:
     Timer<CachedImage> m_decodedDataDeletionTimer;
     bool m_shouldPaintBrokenImage;
     bool m_autoLoadWasPreventedBySettings;
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+public:
+    bool isGifImage();
+    void startAnimation(const IntRect& visibleScreenRect);
+    const IntRect& getVisibleScreenRect() { return m_visibleScreenRect; };
+    static void setEnableGifAnimation(bool enable) { m_enableGifAnimation = enable; };
+    static bool getEnableGifAnimation() { return m_enableGifAnimation; };
+private:
+    static bool m_enableGifAnimation;
+    IntRect m_visibleScreenRect;
+/// @}
+#endif
 };
 
 }

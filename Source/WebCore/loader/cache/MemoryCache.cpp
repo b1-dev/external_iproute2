@@ -692,4 +692,29 @@ void MemoryCache::dumpLRULists(bool includeLive) const
 }
 #endif
 
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+void MemoryCache::startAnimation(const IntRect& visibleScreenRect)
+{
+    HashSet<CachedResourceLoader*>::iterator end = m_cachedResourceLoaders.end();
+    for (HashSet<CachedResourceLoader*>::iterator itr = m_cachedResourceLoaders.begin(); itr != end; ++itr) {
+        if ((*itr)->frame() == NULL)
+            continue;
+        
+        (*itr)->startAnimation(visibleScreenRect);
+    }
+}
+
+void MemoryCache::addCachedResourceLoader(CachedResourceLoader* resLoader)
+{
+    m_cachedResourceLoaders.add(resLoader);
+}
+
+void MemoryCache::removeCachedResourceLoader(CachedResourceLoader* resLoader)
+{
+    m_cachedResourceLoaders.remove(resLoader);
+}
+/// @}
+#endif
+
 } // namespace WebCore

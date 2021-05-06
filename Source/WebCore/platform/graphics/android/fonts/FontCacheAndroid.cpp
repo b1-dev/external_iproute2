@@ -149,10 +149,12 @@ FontPlatformData* FontCache::createFontPlatformData(const FontDescription& fontD
         name = getFallbackFontName(fontDescription);
 
     int style = SkTypeface::kNormal;
+#ifndef FONT_SOFTWARE_RENDER
     if (fontDescription.weight() >= FontWeightBold)
         style |= SkTypeface::kBold;
     if (fontDescription.italic())
         style |= SkTypeface::kItalic;
+#endif
 
     // CreateFromName always returns a typeface, falling back to a default font
     // if the one requested is not found. Calling Equal() with a null pointer

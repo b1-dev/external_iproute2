@@ -32,11 +32,25 @@
 
 namespace WebCore {
 
+#if ENABLE(HTML5_HISTORY_API)
+/// M: enable HTML5 History.
+class History;
+#endif
+
 class SerializedScriptValue;
 
 class PopStateEvent : public Event {
 public:
     virtual ~PopStateEvent();
+
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History. @{
+    static PassRefPtr<PopStateEvent> create();
+    static PassRefPtr<PopStateEvent> create(PassRefPtr<SerializedScriptValue>, PassRefPtr<History>);
+
+    History* history() const { return m_history.get(); }
+    /// @}
+#endif
 
     static PassRefPtr<PopStateEvent> create(PassRefPtr<SerializedScriptValue> stateObject)
     {
@@ -49,9 +63,21 @@ public:
     SerializedScriptValue* state() const { return m_stateObject.get(); }    
 
 private:
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History. @{
+    PopStateEvent();
+    explicit PopStateEvent(PassRefPtr<SerializedScriptValue>, PassRefPtr<History>);
+    /// @}
+#endif
+
     explicit PopStateEvent(PassRefPtr<SerializedScriptValue>);
 
     RefPtr<SerializedScriptValue> m_stateObject;
+
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History.
+    RefPtr<History> m_history;
+#endif
 };
 
 } // namespace WebCore

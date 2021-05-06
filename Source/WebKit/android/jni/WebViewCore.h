@@ -602,6 +602,11 @@ namespace android {
 
         void setPrerenderingEnabled(bool enable);
 
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+        /// M: improve gif animation performance
+        void updateScreenPosInfo();
+#endif
+
         // internal functions
     private:
         enum InputType {

@@ -852,6 +852,29 @@ void KURL::setQuery(const String& query)
 
 }
 
+/**
+ * M: The query may need extra paramter string, which will be
+ * appended with the existing string and then compose a new string.
+ * It does not replace the old query string
+ */
+void KURL::setExtraQuery(const String& extraQuery)
+{
+	if (!m_isValid || extraQuery.isEmpty())
+        return;
+
+    if (extraQuery[0] != '?') {
+    	if (m_pathEnd == m_queryEnd)
+    		parse(m_string.left(m_pathEnd) + "?" + extraQuery);
+    	else
+    	    parse(m_string.left(m_pathEnd) + m_string.substring(m_pathEnd, m_queryEnd) + "&" + extraQuery);
+    } else {
+    	if (m_pathEnd == m_queryEnd)
+    		parse(m_string.left(m_pathEnd) + extraQuery);
+    	else
+    		parse(m_string.left(m_pathEnd) + m_string.substring(m_pathEnd, m_queryEnd) + "&" + extraQuery.substring(1, extraQuery.length()));
+    }
+}
+
 void KURL::setPath(const String& s)
 {
     if (!m_isValid)

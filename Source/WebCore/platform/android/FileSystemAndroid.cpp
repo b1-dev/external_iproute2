@@ -93,7 +93,8 @@ String homeDirectoryPath()
 String pathGetFileName(const String& path)
 {
     CString fsRep = fileSystemRepresentation(path);
-    String fsPath = String(fsRep.data());
+    /// M: fix filename encoding issue.
+    String fsPath = String::fromUTF8(fsRep.data());
     return fsPath.substring(fsPath.reverseFind('/') + 1);
 }
 

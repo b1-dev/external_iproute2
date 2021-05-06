@@ -50,12 +50,22 @@ public:
 
     void drawRegion(const SkRegion& region, bool fill, bool drawBorder,
                     const TransformationMatrix* drawMat, Color color = COLOR_HOLO_LIGHT);
+/// M: Add for theme manager, used in webview.cpp
+#if ENABLE(MTK_THEME_MANAGER)
+    void setThemeTextSelectionColor(int color) { m_themeTextSelectionColor = color; }
+    void setThemeCursorRingColor(int color) { m_themeCursorRingColor = color; }
+#endif
 
 private:
     void drawRing(SkRect& srcRect, Color color, const TransformationMatrix* drawMat);
 
     android::DrawExtra* m_drawExtra;
     SkRect m_visibleContentRect;
+/// M: Add for theme manager, used in drawRegion function
+#if ENABLE(MTK_THEME_MANAGER)
+    int m_themeTextSelectionColor;
+    int m_themeCursorRingColor;
+#endif
 };
 
 } // namespace WebCore

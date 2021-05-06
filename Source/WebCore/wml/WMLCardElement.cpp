@@ -173,7 +173,7 @@ void WMLCardElement::handleIntrinsicEventIfNeeded()
         eventHandler->triggerIntrinsicEvent(eventType);
 
     // Start the timer if it exists in current card
-    if (m_eventTimer)
+    if (m_eventTimer && eventType != WMLIntrinsicEventOnEnterBackward)
         m_eventTimer->start();
 
     for (Node* node = traverseNextNode(); node != 0; node = node->traverseNextNode()) {

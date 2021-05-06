@@ -45,6 +45,12 @@ endif
 BASE_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
+# According to OP01's spec, webkit has to change some behavior to fit the
+# requirements of the spec.
+ifeq ($(OPTR_SPEC_SEG_DEF), OP01_SPEC0200_SEGC)
+  LOCAL_CFLAGS += -DFONT_SOFTWARE_RENDER
+endif
+
 # Define our module and find the intermediates directory
 LOCAL_MODULE := libwebcore
 LOCAL_MODULE_CLASS := STATIC_LIBRARIES
@@ -89,8 +95,10 @@ LOCAL_C_INCLUDES := \
 	external/skia/include/utils \
 	external/skia/src/ports \
 	external/sqlite/dist \
+	external/zlib \
 	frameworks/base/core/jni/android/graphics \
-	frameworks/base/include
+	frameworks/base/include \
+	frameworks/native/include
 
 # Add Source/ for the include of <JavaScriptCore/config.h> from WebCore/config.h
 LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
@@ -164,6 +172,11 @@ LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
 	$(WEBCORE_PATH)/websockets \
 	$(WEBCORE_PATH)/workers \
 	$(WEBCORE_PATH)/xml
+
+ifeq ($(MTK_WML_SUPPORT), yes)
+LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
+	$(WEBCORE_PATH)/wml
+endif
 
 LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
 	$(WEBKIT_PATH)/android \
@@ -262,6 +275,10 @@ ifeq ($(ENABLE_SVG),true)
 LOCAL_CFLAGS += -DENABLE_SVG=1 -DENABLE_SVG_ANIMATION=1
 endif
 
+ifeq ($(MTK_WML_SUPPORT), yes)
+LOCAL_CFLAGS += -DENABLE_WML=1
+endif
+
 ifeq ($(ENABLE_WTF_USE_ACCELERATED_COMPOSITING),false)
 LOCAL_CFLAGS += -DWTF_USE_ACCELERATED_COMPOSITING=0
 endif
@@ -320,6 +337,10 @@ LOCAL_STATIC_LIBRARIES := libxml2 libxslt libhyphenation libskiagpu libv8
 ifeq ($(ENABLE_AUTOFILL),true)
 LOCAL_SHARED_LIBRARIES += libexpat
 endif
+
+# Add Mediatek project customization mechiasm
+LOCAL_C_INCLUDES += mediatek/frameworks/base/custom/inc
+LOCAL_STATIC_LIBRARIES += libcustom_prop
 
 # Redefine LOCAL_SRC_FILES to be all the WebKit source files
 LOCAL_SRC_FILES := $(WEBKIT_SRC_FILES)

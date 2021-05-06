@@ -128,6 +128,11 @@ private:
 
     bool supportsFocus(ControlPart);
     friend RenderTheme* theme();
+
+    /// M: Draw a multiline menu list box instead of a single line menu list @{
+    bool adjustMultilineMenuListStyle(RenderStyle*, Element*) const;
+    bool paintMultilineMenuList(RenderObject*, const PaintInfo&, const IntRect&);
+    /// }@
 };
 
 } // namespace WebCore

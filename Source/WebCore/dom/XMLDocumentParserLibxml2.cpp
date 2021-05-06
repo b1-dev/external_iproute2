@@ -560,6 +560,9 @@ XMLDocumentParser::XMLDocumentParser(Document* document, FrameView* frameView)
     , m_parserPaused(false)
     , m_requestingScript(false)
     , m_finishCalled(false)
+#if ENABLE(WML)
+    , m_firstChunk(true)
+#endif
     , m_errorCount(0)
     , m_lastErrorPosition(TextPosition1::belowRangePosition())
     , m_pendingScript(0)
@@ -587,6 +590,9 @@ XMLDocumentParser::XMLDocumentParser(DocumentFragment* fragment, Element* parent
     , m_parserPaused(false)
     , m_requestingScript(false)
     , m_finishCalled(false)
+#if ENABLE(WML)
+    , m_firstChunk(true)
+#endif
     , m_errorCount(0)
     , m_lastErrorPosition(TextPosition1::belowRangePosition())
     , m_pendingScript(0)
@@ -947,10 +953,19 @@ void XMLDocumentParser::error(ErrorType type, const char* message, va_list args)
         return;
 #endif
 
+#if ENABLE(WML)
+    // Workaround for "Extra content at the end of the document\n".
+    String tmp(m);
+    const char *ptr = "Extra content at the end of the document\n";
+    if (!tmp.contains(ptr)) {
+#endif
     if (m_parserPaused)
         m_pendingCallbacks->appendErrorCallback(type, reinterpret_cast<const xmlChar*>(m), lineNumber(), columnNumber());
     else
         handleError(type, m, lineNumber(), columnNumber());
+#if ENABLE(WML)
+    }
+#endif
 
 #if !COMPILER(MSVC) && !COMPILER(RVCT)
     free(m);
@@ -1063,11 +1078,17 @@ void XMLDocumentParser::internalSubset(const xmlChar* name, const xmlChar* exter
         String extId = toString(externalID);
 #endif
 #if ENABLE(WML)
+        extId = extId.upper();
         if (isWMLDocument()
+            && extId != "-//WAPFORUM//DTD WML 2.0//EN"
             && extId != "-//WAPFORUM//DTD WML 1.3//EN"
             && extId != "-//WAPFORUM//DTD WML 1.2//EN"
             && extId != "-//WAPFORUM//DTD WML 1.1//EN"
-            && extId != "-//WAPFORUM//DTD WML 1.0//EN")
+            && extId != "-//WAPFORUM//DTD WML 1.0//EN"
+            && extId != "-//WAPFORUM//DTD WML 1.3//ZH"
+            && extId != "-//WAPFORUM//DTD WML 1.2//ZH"
+            && extId != "-//WAPFORUM//DTD WML 1.1//ZH"
+            && extId != "-//WAPFORUM//DTD WML 1.0//ZH")
             handleError(fatal, "Invalid DTD Public ID", lineNumber(), columnNumber());
 #endif
 #if ENABLE(XHTMLMP)

@@ -223,7 +223,13 @@ void WebAutofill::fillFormInPage(int queryId, const webkit_glue::FormData& form)
     // that says "only overwrite an elements current value if the user triggered autofill through that element"
     // for elements that have a value already. But by a quirk of Android text views we are OK. We should still
     // fix this though.
-    mFormManager->FillForm(form, 0);
+
+    /// M: fix auto fill problem for ALPS00274333. @{
+    Node* node = NULL;
+    if (mWebViewCore && mWebViewCore->focusedFrame() && mWebViewCore->focusedFrame()->document())
+        node = mWebViewCore->focusedFrame()->document()->focusedNode();
+    mFormManager->FillForm(form, node);
+    /// @}
 }
 
 bool WebAutofill::enabled() const

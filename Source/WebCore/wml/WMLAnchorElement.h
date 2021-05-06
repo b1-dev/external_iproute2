@@ -37,6 +37,9 @@ public:
 
     virtual void defaultEventHandler(Event*);
 
+    /// M: Add href for go element.
+    virtual KURL href() const;
+
 private:
     friend class WMLTaskElement;
     void registerTask(WMLTaskElement*);

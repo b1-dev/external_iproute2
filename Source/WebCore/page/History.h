@@ -46,6 +46,10 @@ public:
     void disconnectFrame();
 
     unsigned length() const;
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History.
+    SerializedScriptValue* state();
+#endif
     void back();
     void forward();
     void go(int distance);
@@ -54,6 +58,13 @@ public:
     void forward(ScriptExecutionContext*);
     void go(ScriptExecutionContext*, int distance);
 
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History. @{
+    bool stateChanged() const;
+    bool isSameAsCurrentState(SerializedScriptValue*) const;
+    /// @}
+#endif
+
     enum StateObjectType {
         StateObjectPush,
         StateObjectReplace
@@ -61,11 +72,23 @@ public:
     void stateObjectAdded(PassRefPtr<SerializedScriptValue>, const String& title, const String& url, StateObjectType, ExceptionCode&);
 
 private:
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History.
+    explicit History(Frame*);
+#else
     History(Frame*);
+#endif
 
     KURL urlForState(const String& url);
 
     Frame* m_frame;
+
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History. @{
+    SerializedScriptValue* stateInternal() const;
+    SerializedScriptValue* m_lastStateObjectRequested;
+    /// @}
+#endif
 };
 
 } // namespace WebCore

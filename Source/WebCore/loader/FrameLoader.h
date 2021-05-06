@@ -493,6 +493,9 @@ private:
     RefPtr<FrameNetworkingContext> m_networkingContext;
 
     KURL m_previousUrl;
+
+    /// M: Customer specific x-wap-profile
+    String m_customXWapProfile;
 };
 
 // This function is called by createWindow() in JSDOMWindowBase.cpp, for example, for

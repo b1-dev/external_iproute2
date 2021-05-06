@@ -43,6 +43,7 @@
 #include "SkCanvas.h"
 #include "UserAgentStyleSheets.h"
 #include "WebCoreFrameBridge.h"
+#include "OptionGroupElement.h"
 
 namespace WebCore {
 
@@ -522,8 +523,11 @@ void RenderThemeAndroid::adjustTextAreaStyle(CSSStyleSelector*, RenderStyle* sty
 
 bool RenderThemeAndroid::paintTextArea(RenderObject* obj, const PaintInfo& info, const IntRect& rect)
 {
-    if (obj->isMenuList())
+    if (obj->isMenuList()) {
         paintCombo(obj, info, rect);
+        /// M: Draw a multiline menu list box instead of a single line menu list
+        paintMultilineMenuList(obj, info, rect);
+    }
     return true;
 }
 
@@ -553,7 +557,9 @@ static void adjustMenuListStyleCommon(RenderStyle* style)
 
 void RenderThemeAndroid::adjustListboxStyle(CSSStyleSelector*, RenderStyle* style, Element* e) const
 {
-    adjustMenuListButtonStyle(0, style, 0);
+    /// M: If the menu list is multiple line, allocate height for it.
+    if (!adjustMultilineMenuListStyle(style, e))
+        adjustMenuListButtonStyle(0, style, 0);
 }
 
 void RenderThemeAndroid::adjustMenuListStyle(CSSStyleSelector*, RenderStyle* style, Element*) const
@@ -682,5 +688,98 @@ bool RenderThemeAndroid::supportsFocusRing(const RenderStyle* style) const
         return true;
     return style->appearance() != TextFieldPart && style->appearance() != TextAreaPart;
 }
+
+/// M: Draw a multiline menu list box instead of a single line menu list @{
+bool RenderThemeAndroid::paintMultilineMenuList(RenderObject* obj, const PaintInfo& info, const IntRect& rect)
+{
+    Node* node = obj->node();
+    if (!node || !node->hasTagName(HTMLNames::selectTag))
+        return true;
+
+    HTMLSelectElement* select = static_cast<HTMLSelectElement*>(node);
+    int numVisibleItems = select->size();
+    if (numVisibleItems > 1) {
+        RenderStyle* style = obj->style();
+        if (style)
+            style->setColor(Color::transparent);
+
+        const Vector<Element*>& listItems = select->listItems();
+
+        int listItemsSize = listItems.size();
+        int indexOffset = select->selectedIndex();
+        int itemHeight = style->fontSize() + listboxPadding;
+
+        if (indexOffset + numVisibleItems > listItemsSize)
+            indexOffset = listItemsSize - numVisibleItems;
+        if (indexOffset < 0)
+            indexOffset = 0;
+
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setTextEncoding(SkPaint::kUTF16_TextEncoding);
+        paint.setTextSize(style->fontSize());
+
+        SkCanvas* canvas = getCanvasFromInfo(info);
+        const SkScalar padding = SkIntToScalar(listboxPadding);
+        int index = indexOffset;
+
+        // Clip a round rectangle for the round border
+        int saveCountMain = canvas->save();
+        SkPath path;
+        path.addRoundRect(rect, padding, padding);
+        canvas->clipPath(path);
+
+
+        while (index < listItemsSize && index < indexOffset + numVisibleItems) {
+            Element* element = listItems[index];
+            OptionElement* optionElement = toOptionElement(element);
+            Color textColor = style->visitedDependentColor(CSSPropertyColor);
+            if (element->renderStyle() && element->renderStyle()->visitedDependentColor(CSSPropertyColor).rgb())
+                textColor = element->renderStyle()->visitedDependentColor(CSSPropertyColor);
+
+            String label;
+            if (optionElement)
+                label = optionElement->textIndentedToRespectGroupLabel();
+            else if (OptionGroupElement* optionGroupElement = toOptionGroupElement(element))
+                label = optionGroupElement->groupLabelText();
+
+            int saveCount = canvas->save();
+            SkRect r(IntRect(rect.x(), rect.y() + itemHeight * (index - indexOffset), rect.width(), itemHeight));
+            if (optionElement && optionElement->selected()) {
+                // Draw the highlighted rectangle for selected items
+                paint.setColor(0x6633b5e5); // 0x6633b5e5 copied from framework's holo_light
+                canvas->drawRect(r, paint);
+                paint.setColor(Color::white);
+            }
+            else {
+                paint.setColor(textColor.rgb());
+            }
+            r.fRight -= padding;
+            canvas->clipRect(r);
+            canvas->drawText(label.characters(), label.length() << 1,
+                     r.fLeft + padding, r.fBottom - padding, paint);
+            canvas->restoreToCount(saveCount);
+            index++;
+        }
+        canvas->restoreToCount(saveCountMain);
+    }
+    return true;
+}
+
+bool RenderThemeAndroid::adjustMultilineMenuListStyle(RenderStyle* style, Element* e) const
+{
+    SelectElement* sel = toSelectElement(e);
+    if (sel && sel->size() > 1) {
+        // Keep the original height from HTML/CSS source code
+        int oldHeight = style->logicalHeight().isFixed() ? style->logicalHeight().value() : -1;
+        adjustMenuListButtonStyle(0, style, 0);
+        // Override the height if height not defined by HTML/CSS source code
+        style->setHeight(Length(oldHeight > 0 ? oldHeight :
+                (style->fontSize() + listboxPadding) * sel->size(), Fixed));
+        return true;
+    }
+    return false;
+}
+/// }@
 
 } // namespace WebCore

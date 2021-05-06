@@ -222,6 +222,11 @@
 #include "ScriptedAnimationController.h"
 #endif
 
+#if ENABLE(HTML5_HISTORY_API)
+/// M: enable HTML5 History.
+#include "History.h"
+#endif
+
 using namespace std;
 using namespace WTF;
 using namespace Unicode;
@@ -1342,6 +1347,34 @@ void Document::removeTitle(Element* titleElement)
     if (!m_titleElement)
         updateTitle(StringWithDirection());
 }
+
+#if ENABLE(PAGE_VISIBILITY_API)
+PageVisibilityState Document::visibilityState() const
+{
+    // The visibility of the document is inherited from the visibility of the
+    // page. If there is no page associated with the document, we will assume
+    // that the page is visible i.e. invisibility has to be explicitly
+    // specified by the embedder.
+    if (!m_frame || !m_frame->page())
+        return PageVisibilityStateVisible;
+    return m_frame->page()->visibilityState();
+}
+
+String Document::webkitVisibilityState() const
+{
+    return pageVisibilityStateString(visibilityState());
+}
+
+bool Document::webkitHidden() const
+{
+    return visibilityState() != PageVisibilityStateVisible;
+}
+
+void Document::dispatchVisibilityStateChangeEvent()
+{
+    dispatchEvent(Event::create(eventNames().webkitvisibilitychangeEvent, false, false));
+}
+#endif
 
 String Document::nodeName() const
 {
@@ -2684,7 +2717,7 @@ void Document::processHttpEquiv(const String& equiv, const String& content)
 // Though isspace() considers \t and \v to be whitespace, Win IE doesn't.
 static bool isSeparator(UChar c)
 {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '=' || c == ',' || c == '\0';
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '=' || c == ',' || c == '\0' || c == ';';//add the semicolon
 }
 
 void Document::processArguments(const String& features, void* data, ArgumentsCallback callback)
@@ -2712,14 +2745,14 @@ void Document::processArguments(const String& features, void* data, ArgumentsCal
 
         // skip to first '=', but don't skip past a ',' or the end of the string
         while (buffer[i] != '=') {
-            if (buffer[i] == ',' || i >= length)
+            if (buffer[i] == ',' || buffer[i] == ';' || i >= length)
                 break;
             i++;
         }
 
         // skip to first non-separator, but don't skip past a ',' or the end of the string
         while (isSeparator(buffer[i])) {
-            if (buffer[i] == ',' || i >= length)
+            if (buffer[i] == ',' || buffer[i] == ';' || i >= length)
                 break;
             i++;
         }
@@ -3619,6 +3652,12 @@ PassRefPtr<Event> Document::createEvent(const String& eventType, ExceptionCode& 
 #if ENABLE(ORIENTATION_EVENTS)
     else if (eventType == "OrientationEvent")
         event = Event::create();
+#endif
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History. @{
+    else if (eventType == "PopStateEvent")
+        event = PopStateEvent::create();
+    /// @}
 #endif
     if (event)
         return event.release();
@@ -4800,7 +4839,12 @@ void Document::enqueueHashchangeEvent(const String& oldURL, const String& newURL
 void Document::enqueuePopstateEvent(PassRefPtr<SerializedScriptValue> stateObject)
 {
     // FIXME: https://bugs.webkit.org/show_bug.cgi?id=36202 Popstate event needs to fire asynchronously
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History.
+    dispatchWindowEvent(PopStateEvent::create(stateObject, domWindow() ? domWindow()->history() : 0));
+#else
     dispatchWindowEvent(PopStateEvent::create(stateObject));
+#endif
 }
 
 void Document::addMediaCanStartListener(MediaCanStartListener* listener)

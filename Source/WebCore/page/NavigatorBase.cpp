@@ -80,6 +80,11 @@ String NavigatorBase::appVersion() const
 {
     // Version is everything in the user agent string past the "Mozilla/" prefix.
     const String& agent = userAgent();
+    /// M: For CU specific UserAgent which not start with "Mozilla/" @{
+    if (!agent.startsWith("Mozilla/"))
+    	return String("5.0 ") + agent;
+    else
+    /// }@
     return agent.substring(agent.find('/') + 1);
 }
 

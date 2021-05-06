@@ -500,13 +500,21 @@ int TilesManager::tileHeight()
 
 TilesManager* TilesManager::instance()
 {
+    /// M: to avoid create multiple TilesManager @{
     if (!gInstance) {
-        gInstance = new TilesManager();
-        ALOGV("instance(), new gInstance is %x", gInstance);
+        android::Mutex::Autolock lock(gInstanceLock);
+        if (!gInstance) {
+            gInstance = new TilesManager();
+            ALOGV("instance(), new gInstance is %x", gInstance);
+        }
     }
+    /// M: @}
     return gInstance;
 }
 
+/// M: to avoid create multiple TilesManager @{
+android::Mutex TilesManager::gInstanceLock;
+/// M: @}
 TilesManager* TilesManager::gInstance = 0;
 
 } // namespace WebCore

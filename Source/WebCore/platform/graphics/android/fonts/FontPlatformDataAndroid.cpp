@@ -76,6 +76,9 @@ FontPlatformData::RefCountedHarfbuzzFace::~RefCountedHarfbuzzFace()
 
 FontPlatformData::FontPlatformData()
     : mTypeface(NULL), mTextSize(0), mEmSizeInFontUnits(0), mFakeBold(false), mFakeItalic(false),
+#ifdef FONT_SOFTWARE_RENDER
+      mForceFakeBold(0), mForceFakeItalic(0),
+#endif
       mOrientation(Horizontal), mTextOrientation(TextOrientationVerticalRight)
 {
     inc_count();
@@ -96,6 +99,10 @@ FontPlatformData::FontPlatformData(const FontPlatformData& src)
     m_harfbuzzFace = src.m_harfbuzzFace;
     mOrientation = src.mOrientation;
     mTextOrientation = src.mTextOrientation;
+#ifdef FONT_SOFTWARE_RENDER
+    mForceFakeBold = src.mForceFakeBold;
+    mForceFakeItalic = src.mForceFakeItalic;
+#endif
 
     inc_count();
     trace(2);
@@ -104,6 +111,9 @@ FontPlatformData::FontPlatformData(const FontPlatformData& src)
 FontPlatformData::FontPlatformData(SkTypeface* tf, float textSize, bool fakeBold, bool fakeItalic,
     FontOrientation orientation, TextOrientation textOrientation)
     : mTypeface(tf), mTextSize(textSize), mEmSizeInFontUnits(0), mFakeBold(fakeBold), mFakeItalic(fakeItalic),
+#ifdef FONT_SOFTWARE_RENDER
+      mForceFakeBold(0), mForceFakeItalic(0),
+#endif
       mOrientation(orientation), mTextOrientation(textOrientation)
 {
     if (hashTableDeletedFontValue() != mTypeface) {
@@ -116,6 +126,9 @@ FontPlatformData::FontPlatformData(SkTypeface* tf, float textSize, bool fakeBold
 
 FontPlatformData::FontPlatformData(const FontPlatformData& src, float textSize)
     : mTypeface(src.mTypeface), mTextSize(textSize), mEmSizeInFontUnits(src.mEmSizeInFontUnits), mFakeBold(src.mFakeBold), mFakeItalic(src.mFakeItalic),
+#ifdef FONT_SOFTWARE_RENDER
+      mForceFakeBold(src.mForceFakeBold), mForceFakeItalic(src.mForceFakeItalic),
+#endif
       mOrientation(src.mOrientation), mTextOrientation(src.mTextOrientation), m_harfbuzzFace(src.m_harfbuzzFace)
 {
     if (hashTableDeletedFontValue() != mTypeface) {
@@ -128,6 +141,9 @@ FontPlatformData::FontPlatformData(const FontPlatformData& src, float textSize)
 
 FontPlatformData::FontPlatformData(float size, bool bold, bool oblique)
     : mTypeface(NULL), mTextSize(size),  mEmSizeInFontUnits(0), mFakeBold(bold), mFakeItalic(oblique),
+#ifdef FONT_SOFTWARE_RENDER
+      mForceFakeBold(0), mForceFakeItalic(0),
+#endif
       mOrientation(Horizontal), mTextOrientation(TextOrientationVerticalRight)
 {
     inc_count();
@@ -137,6 +153,9 @@ FontPlatformData::FontPlatformData(float size, bool bold, bool oblique)
 FontPlatformData::FontPlatformData(const FontPlatformData& src, SkTypeface* tf)
     : mTypeface(tf), mTextSize(src.mTextSize),  mEmSizeInFontUnits(0), mFakeBold(src.mFakeBold),
       mFakeItalic(src.mFakeItalic), mOrientation(src.mOrientation),
+#ifdef FONT_SOFTWARE_RENDER
+      mForceFakeBold(src.mForceFakeBold), mForceFakeItalic(src.mForceFakeItalic),
+#endif
       mTextOrientation(src.mTextOrientation)
 {
     if (hashTableDeletedFontValue() != mTypeface) {
@@ -192,6 +211,10 @@ FontPlatformData& FontPlatformData::operator=(const FontPlatformData& src)
     m_harfbuzzFace = src.m_harfbuzzFace;
     mOrientation = src.mOrientation;
     mTextOrientation = src.mTextOrientation;
+#ifdef FONT_SOFTWARE_RENDER
+    mForceFakeBold = src.mForceFakeBold;
+    mForceFakeItalic = src.mForceFakeItalic;
+#endif
 
     return *this;
 }
@@ -207,8 +230,19 @@ void FontPlatformData::setupPaint(SkPaint* paint) const
     paint->setSubpixelText(true);
     paint->setHinting(SkPaint::kSlight_Hinting);
     paint->setTextSize(SkFloatToScalar(mTextSize));
+#ifdef FONT_SOFTWARE_RENDER
+    if (!mForceFakeBold & 0x02)
+        paint->setFakeBoldText(mFakeBold);
+    else
+        paint->setFakeBoldText(mForceFakeBold & 0x01);
+    if (!mForceFakeItalic & 0x02)
+        paint->setTextSkewX(mFakeItalic ? -SK_Scalar1/4 : 0);
+    else
+        paint->setTextSkewX((mForceFakeItalic & 0x01) ? -SK_Scalar1/4 : 0);
+#else
     paint->setFakeBoldText(mFakeBold);
     paint->setTextSkewX(mFakeItalic ? -SK_Scalar1/4 : 0);
+#endif
 #ifndef SUPPORT_COMPLEX_SCRIPTS
     paint->setTextEncoding(SkPaint::kUTF16_TextEncoding);
 #endif
@@ -228,6 +262,10 @@ bool FontPlatformData::operator==(const FontPlatformData& a) const
             mTextSize == a.mTextSize &&
             mFakeBold == a.mFakeBold &&
             mFakeItalic == a.mFakeItalic &&
+#ifdef FONT_SOFTWARE_RENDER
+            mForceFakeBold == a.mForceFakeBold &&
+            mForceFakeItalic == a.mForceFakeItalic &&
+#endif
             mOrientation == a.mOrientation &&
             mTextOrientation == a.mTextOrientation;
 }
@@ -244,8 +282,14 @@ unsigned FontPlatformData::hash() const
 
     uint32_t sizeAsInt = *reinterpret_cast<const uint32_t*>(&mTextSize);
 
+#ifdef FONT_SOFTWARE_RENDER
+    h ^= 0x01010101 * (((int)mForceFakeBold << 5) | ((int)mForceFakeItalic << 4) |
+         (static_cast<int>(mTextOrientation) << 3) | (static_cast<int>(mOrientation) << 2) |
+         ((int)mFakeBold << 1) | (int)mFakeItalic);
+#else
     h ^= 0x01010101 * ((static_cast<int>(mTextOrientation) << 3) | (static_cast<int>(mOrientation) << 2) |
          ((int)mFakeBold << 1) | (int)mFakeItalic);
+#endif
     h ^= sizeAsInt;
     return h;
 }
@@ -257,6 +301,16 @@ bool FontPlatformData::isFixedPitch() const
     else
         return false;
 }
+
+#ifdef FONT_SOFTWARE_RENDER
+void FontPlatformData::setFakeAttr(bool fakeBold, bool fakeItalic)
+{
+    mForceFakeBold = 0;
+    mForceFakeItalic = 0;
+    mForceFakeBold |= (0x02 | (fakeBold ? 0x01 : 0));
+    mForceFakeItalic |= (0x02 | (fakeItalic ? 0x01 : 0));
+}
+#endif
 
 HB_FaceRec_* FontPlatformData::harfbuzzFace() const
 {

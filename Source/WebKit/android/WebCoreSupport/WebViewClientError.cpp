@@ -27,12 +27,15 @@
 #include "WebViewClientError.h"
 
 #include <cutils/log.h>
+#define XLOG_TAG "WebRequest"
+#include <cutils/xlog.h>
 
 using namespace net;
 
 namespace android {
 
 WebViewClientError ToWebViewClientError(net::Error error) {
+    XLOGD2("request error: %d", error);
     // Note: many net::Error constants don't have an obvious mapping.
     // These will be handled by the default case, ERROR_UNKNOWN.
     switch(error) {

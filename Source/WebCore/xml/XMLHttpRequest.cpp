@@ -34,6 +34,7 @@
 #include "EventListener.h"
 #include "EventNames.h"
 #include "File.h"
+#include "HTMLDocument.h"
 #include "HTTPParsers.h"
 #include "InspectorInstrumentation.h"
 #include "ResourceError.h"
@@ -59,6 +60,9 @@
 #include <heap/Strong.h>
 #include <runtime/JSLock.h>
 #endif
+
+#include <cutils/xlog.h>
+#define XLOG_TAG "WebCore/XMLHttpRequest"
 
 namespace WebCore {
 
@@ -220,6 +224,8 @@ bool XMLHttpRequest::usesDashboardBackwardCompatibilityMode() const
 
 XMLHttpRequest::State XMLHttpRequest::readyState() const
 {
+    XLOGD2("readyState = %d", m_state);
+
     return m_state;
 }
 
@@ -239,21 +245,31 @@ Document* XMLHttpRequest::responseXML(ExceptionCode& ec)
         return 0;
     }
 
-    if (m_state != DONE)
+    if (m_error || m_state != DONE) {
+        ec = INVALID_STATE_ERR;
         return 0;
+    }
 
     if (!m_createdDocument) {
-        if ((m_response.isHTTP() && !responseIsXML()) || scriptExecutionContext()->isWorkerContext()) {
-            // The W3C spec requires this.
+        /// M: check if document type is HTML or not
+        bool isHTML = equalIgnoringCase(responseMIMEType(), "text/html");
+        if ((m_response.isHTTP() && !responseIsXML() && !isHTML)
+            || (isHTML && responseTypeCode() == ResponseTypeDefault)
+            || scriptExecutionContext()->isWorkerContext()) {
             m_responseXML = 0;
         } else {
-            m_responseXML = Document::create(0, m_url);
+            if (isHTML) {
+                m_responseXML = HTMLDocument::create(0, m_url);
+            } else {
+                m_responseXML = Document::create(0, m_url);
+            }
             // FIXME: Set Last-Modified.
             m_responseXML->setContent(m_responseBuilder.toStringPreserveCapacity());
             m_responseXML->setSecurityOrigin(document()->securityOrigin());
             if (!m_responseXML->wellFormed())
                 m_responseXML = 0;
         }
+
         m_createdDocument = true;
     }
 
@@ -261,19 +277,54 @@ Document* XMLHttpRequest::responseXML(ExceptionCode& ec)
 }
 
 #if ENABLE(XHR_RESPONSE_BLOB)
-Blob* XMLHttpRequest::responseBlob(ExceptionCode& ec) const
+Blob* XMLHttpRequest::responseBlob(ExceptionCode& ec)
 {
+    XLOGD2("responseBlob");
+
     if (responseTypeCode() != ResponseTypeBlob) {
         ec = INVALID_STATE_ERR;
         return 0;
     }
+
+    // We always return null before DONE.
+    if (m_state != DONE){
+        ec = INVALID_STATE_ERR;
+        return 0;
+    }
+
+    /// M : set m_responseBlob
+    if (!m_responseBlob.get()) {
+        // FIXME: This causes two (or more) unnecessary copies of the data.
+        // Chromium stores blob data in the browser process, so we're pulling the data
+        // from the network only to copy it into the renderer to copy it back to the browser.
+        // Ideally we'd get the blob/file-handle from the ResourceResponse directly
+        // instead of copying the bytes. Embedders who store blob data in the
+        // same process as WebCore would at least to teach BlobData to take
+        // a SharedBuffer, even if they don't get the Blob from the network layer directly.
+        OwnPtr<BlobData> blobData = BlobData::create();
+        // If we errored out or got no data, we still return a blob, just an empty one.
+        if (m_binaryResponseBuilder.get()) {
+            RefPtr<RawData> rawData = RawData::create();
+            unsigned int size = m_binaryResponseBuilder->size();
+            rawData->mutableData()->append(m_binaryResponseBuilder->data(), size);
+            blobData->appendData(rawData, 0, BlobDataItem::toEndOfFile);
+            // responseMIMEType defaults to text/xml which may be incorrect.
+            blobData->setContentType(responseMIMEType());
+            m_binaryResponseBuilder.clear();
+        }
+        XLOGD2("create m_responseBlob");
+        m_responseBlob = Blob::create(blobData.release(), m_binaryResponseBuilder.get() ? m_binaryResponseBuilder->size() : 0);
+    }
     return m_responseBlob.get();
+
 }
 #endif
 
 ArrayBuffer* XMLHttpRequest::responseArrayBuffer(ExceptionCode& ec)
 {
-    if (m_responseTypeCode != ResponseTypeArrayBuffer) {
+    XLOGD2("responseArrayBuffer");
+
+    if (responseTypeCode() != ResponseTypeArrayBuffer) {
         ec = INVALID_STATE_ERR;
         return 0;
     }
@@ -313,6 +364,8 @@ void XMLHttpRequest::setResponseType(const String& responseType, ExceptionCode& 
         m_responseTypeCode = ResponseTypeArrayBuffer;
     } else
         ec = SYNTAX_ERR;
+
+    XLOGD2("setResponseType = %d", m_responseTypeCode);
 }
 
 String XMLHttpRequest::responseType()
@@ -341,6 +394,8 @@ XMLHttpRequestUpload* XMLHttpRequest::upload()
 
 void XMLHttpRequest::changeState(State newState)
 {
+    XLOGD2("changeState, from %d to %d", m_state, newState);
+
     if (m_state != newState) {
         m_state = newState;
         callReadyStateChangeListener();
@@ -349,6 +404,8 @@ void XMLHttpRequest::changeState(State newState)
 
 void XMLHttpRequest::callReadyStateChangeListener()
 {
+    XLOGD2("callReadyStateChangeListener");
+
     if (!scriptExecutionContext())
         return;
 
@@ -990,10 +1047,6 @@ void XMLHttpRequest::didFinishLoading(unsigned long identifier, double)
 
     m_responseBuilder.shrinkToFit();
 
-#if ENABLE(XHR_RESPONSE_BLOB)
-    // FIXME: Set m_responseBlob to something here in the ResponseTypeBlob case.
-#endif
-
     InspectorInstrumentation::resourceRetrievedByXMLHttpRequest(scriptExecutionContext(), identifier, m_responseBuilder.toStringPreserveCapacity(), m_url, m_lastSendURL, m_lastSendLineNumber);
 
     bool hadLoader = m_loader;
@@ -1066,7 +1119,11 @@ void XMLHttpRequest::didReceiveData(const char* data, int len)
 
     if (useDecoder)
         m_responseBuilder.append(m_decoder->decode(data, len));
-    else if (responseTypeCode() == ResponseTypeArrayBuffer) {
+    else if (responseTypeCode() == ResponseTypeArrayBuffer
+#if ENABLE(XHR_RESPONSE_BLOB)
+         || responseTypeCode() == ResponseTypeBlob
+#endif
+        ) {
         // Buffer binary data.
         if (!m_binaryResponseBuilder)
             m_binaryResponseBuilder = SharedBuffer::create();

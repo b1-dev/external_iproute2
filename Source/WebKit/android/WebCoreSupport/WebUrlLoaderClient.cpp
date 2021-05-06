@@ -85,6 +85,7 @@ base::ConditionVariable* WebUrlLoaderClient::syncCondition() {
 
 WebUrlLoaderClient::~WebUrlLoaderClient()
 {
+    m_webFrame->unref();
 }
 
 bool WebUrlLoaderClient::isActive() const
@@ -111,6 +112,8 @@ WebUrlLoaderClient::WebUrlLoaderClient(WebFrame* webFrame, WebCore::ResourceHand
     , m_sync(false)
     , m_finished(false)
 {
+	m_webFrame->ref();
+
     bool block = webFrame->blockNetworkLoads() && (resourceRequest.url().protocolIs("http") || resourceRequest.url().protocolIs("https"));
     WebResourceRequest webResourceRequest(resourceRequest, block);
     UrlInterceptResponse* intercept = webFrame->shouldInterceptRequest(resourceRequest.url().string());

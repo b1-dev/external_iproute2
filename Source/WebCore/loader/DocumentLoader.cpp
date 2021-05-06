@@ -625,7 +625,9 @@ bool DocumentLoader::scheduleArchiveLoad(ResourceLoader* loader, const ResourceR
 
     if (!resource) {
         // WebArchiveDebugMode means we fail loads instead of trying to fetch them from the network if they're not in the archive.
-        bool shouldFailLoad = m_frame->settings()->webArchiveDebugModeEnabled() && ArchiveFactory::isArchiveMimeType(responseMIMEType());
+        /// M+ Add null pointer check for m_frame->settings().
+        bool shouldFailLoad = m_frame->settings() && m_frame->settings()->webArchiveDebugModeEnabled() && ArchiveFactory::isArchiveMimeType(responseMIMEType());
+        /// M-
 
         if (!shouldFailLoad)
             return false;

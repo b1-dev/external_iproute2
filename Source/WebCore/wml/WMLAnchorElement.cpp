@@ -80,6 +80,15 @@ void WMLAnchorElement::deregisterTask(WMLTaskElement* task)
     m_task = 0;
 }
 
+/// M: Add href for go element. @{
+KURL WMLAnchorElement::href() const
+{
+    if (!m_task)
+        return KURL();
+    return m_task->href();
+}
+/// @}
+
 }
 
 #endif

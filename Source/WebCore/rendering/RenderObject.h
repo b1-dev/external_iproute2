@@ -773,6 +773,11 @@ public:
         return outlineBoundsForRepaint(0);
     }
 
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance
+    bool isOutOfScreen(const WebCore::IntRect& visibleScreenRect);
+#endif
+
 protected:
     // Overrides should call the superclass at the end
     virtual void styleWillChange(StyleDifference, const RenderStyle* newStyle);

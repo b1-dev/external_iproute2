@@ -115,7 +115,8 @@ WMLPageState* wmlPageStateForDocument(Document* doc)
     ASSERT(doc);
 
     Page* page = doc->page();
-    ASSERT(page);
+    if (!page)
+        return (WMLPageState*)0;
 
     return page->wmlPageState();
 }

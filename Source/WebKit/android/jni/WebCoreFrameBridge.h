@@ -150,6 +150,11 @@ class WebFrame : public WebCoreRefObject {
     // Convert a URL from potential punycode I18nDomainName to safe to-be-displayed Unicode.
     static WTF::String convertIDNToUnicode(const WebCore::KURL& kurl);
 
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History.
+    void updateUrl(const WTF::String& url);
+#endif
+
   private:
     struct JavaBrowserFrame;
     JavaBrowserFrame* mJavaFrame;

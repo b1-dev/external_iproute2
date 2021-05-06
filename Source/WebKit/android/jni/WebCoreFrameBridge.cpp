@@ -60,6 +60,7 @@
 #include "IconDatabase.h"
 #include "Image.h"
 #include "InspectorClientAndroid.h"
+#include "JavaClassJobjectV8.h"
 #include "JavaNPObjectV8.h"
 #include "JavaInstanceJobjectV8.h"
 #include "KURL.h"
@@ -207,6 +208,10 @@ struct WebFrame::JavaBrowserFrame
     jmethodID   mShouldSaveFormData;
     jmethodID   mSaveFormData;
     jmethodID   mAutoLogin;
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History.
+    jmethodID   mUpdateUrl;
+#endif
     AutoJObject frame(JNIEnv* env) {
         return getRealObject(env, mObj);
     }
@@ -281,6 +286,10 @@ WebFrame::WebFrame(JNIEnv* env, jobject obj, jobject historyList, WebCore::Page*
     mJavaFrame->mSaveFormData = env->GetMethodID(clazz, "saveFormData", "(Ljava/util/HashMap;)V");
     mJavaFrame->mAutoLogin = env->GetMethodID(clazz, "autoLogin",
             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History.
+    mJavaFrame->mUpdateUrl = env->GetMethodID(clazz, "updateUrl","(Ljava/lang/String;)V");
+#endif
     env->DeleteLocalRef(clazz);
 
     ALOG_ASSERT(mJavaFrame->mMaybeSavePassword, "Could not find method maybeSavePassword");
@@ -314,6 +323,10 @@ WebFrame::WebFrame(JNIEnv* env, jobject obj, jobject historyList, WebCore::Page*
     ALOG_ASSERT(mJavaFrame->mShouldSaveFormData, "Could not find method shouldSaveFormData");
     ALOG_ASSERT(mJavaFrame->mSaveFormData, "Could not find method saveFormData");
     ALOG_ASSERT(mJavaFrame->mAutoLogin, "Could not find method autoLogin");
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History.
+    ALOG_ASSERT(mJavaFrame->mUpdateUrl, "Could not find method updateUrl");
+#endif
 
     mUserAgent = WTF::String();
     mBlockNetworkLoads = false;
@@ -700,6 +713,34 @@ WebFrame::canHandleRequest(const WebCore::ResourceRequest& request)
     env->DeleteLocalRef(jUrlStr);
     return ret == JNI_FALSE;
 }
+
+#if ENABLE(HTML5_HISTORY_API)
+/// M: enable HTML5 History. @{
+void
+WebFrame::updateUrl(const WTF::String& url)
+{
+#ifdef ANDROID_INSTRUMENT
+    TimeCounterAuto counter(TimeCounter::JavaCallbackTimeCounter);
+#endif
+    JNIEnv* env = getJNIEnv();
+    AutoJObject javaFrame = mJavaFrame->frame(env);
+    if (!javaFrame.get())
+        return;
+
+    if (url.isEmpty())
+        return;
+    jstring jUrlStr = wtfStringToJstring(env, url);
+
+    // Delegate to the Java side to make the decision. Note that the sense of
+    // the return value of the Java method is reversed. It will return true if
+    // the embedding application wishes to hijack the load and hence the WebView
+    // should _not_ proceed with the load.
+    env->CallVoidMethod(javaFrame.get(), mJavaFrame->mUpdateUrl, jUrlStr);
+    checkException(env);
+    env->DeleteLocalRef(jUrlStr);
+}
+/// @}
+#endif
 
 bool
 WebFrame::shouldSaveFormData()
@@ -1505,14 +1546,14 @@ static jobject StringByEvaluatingJavaScriptFromString(JNIEnv *env, jobject obj, 
 // and virtualEnd and swap the weak reference for the real object.
 class WeakJavaInstance : public JavaInstanceJobject {
 public:
-    static PassRefPtr<WeakJavaInstance> create(jobject obj)
+    static PassRefPtr<WeakJavaInstance> create(jobject obj, bool requireAnnotation)
     {
-        return adoptRef(new WeakJavaInstance(obj));
+        return adoptRef(new WeakJavaInstance(obj, requireAnnotation));
     }
 
 private:
-    WeakJavaInstance(jobject instance)
-        : JavaInstanceJobject(instance)
+    WeakJavaInstance(jobject instance, bool requireAnnotation)
+        : JavaInstanceJobject(instance, requireAnnotation)
         , m_beginEndDepth(0)
     {
         JNIEnv* env = getJNIEnv();
@@ -1569,7 +1610,7 @@ private:
 };
 
 static void AddJavascriptInterface(JNIEnv *env, jobject obj, jint nativeFramePointer,
-        jobject javascriptObj, jstring interfaceName)
+        jobject javascriptObj, jstring interfaceName, jboolean requireAnnotation)
 {
     WebCore::Frame* pFrame = 0;
     if (nativeFramePointer == 0)
@@ -1583,7 +1624,8 @@ static void AddJavascriptInterface(JNIEnv *env, jobject obj, jint nativeFramePoi
     ALOGV("::WebCore:: addJSInterface: %p", pFrame);
 
     if (pFrame) {
-        RefPtr<JavaInstance> addedObject = WeakJavaInstance::create(javascriptObj);
+        RefPtr<JavaInstance> addedObject = WeakJavaInstance::create(javascriptObj,
+                requireAnnotation);
         const char* name = getCharactersFromJStringInEnv(env, interfaceName);
         // Pass ownership of the added object to bindToWindowObject.
         NPObject* npObject = JavaInstanceToNPObject(addedObject.get());
@@ -1951,7 +1993,7 @@ static JNINativeMethod gBrowserFrameNativeMethods[] = {
         (void*) Reload },
     { "nativeGoBackOrForward", "(I)V",
         (void*) GoBackOrForward },
-    { "nativeAddJavascriptInterface", "(ILjava/lang/Object;Ljava/lang/String;)V",
+    { "nativeAddJavascriptInterface", "(ILjava/lang/Object;Ljava/lang/String;Z)V",
         (void*) AddJavascriptInterface },
     { "stringByEvaluatingJavaScriptFromString",
             "(Ljava/lang/String;)Ljava/lang/String;",
@@ -1986,6 +2028,8 @@ static JNINativeMethod gBrowserFrameNativeMethods[] = {
 
 int registerWebFrame(JNIEnv* env)
 {
+    JavaClassJobject::RegisterJavaClassJobject(env);
+
     jclass clazz = env->FindClass("android/webkit/BrowserFrame");
     ALOG_ASSERT(clazz, "Cannot find BrowserFrame");
     gFrameField = env->GetFieldID(clazz, "mNativeFrame", "I");

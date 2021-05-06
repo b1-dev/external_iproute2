@@ -249,9 +249,17 @@ void GraphicsLayerAndroid::updatePositionedLayers()
         m_contentLayer->setAbsolutePosition(false);
         // We need to get the passed CSS properties for the element
         SkLength left, top, right, bottom;
-        left = SkLength::convertLength(view->style()->left());
+        /// M: position is Fixed and flow is left need set fixedvalue ALPS00343200 @{
+        if (FLEFT == view->style()->floating())
+            left.setFixedValue(view->style()->left().value());
+        else
+            left = SkLength::convertLength(view->style()->left());
         top = SkLength::convertLength(view->style()->top());
-        right = SkLength::convertLength(view->style()->right());
+        if (FRIGHT == view->style()->floating())
+            right.setFixedValue(view->style()->right().value());
+        else
+            right = SkLength::convertLength(view->style()->right());
+        /// M: @}
         bottom = SkLength::convertLength(view->style()->bottom());
 
         // We also need to get the margin...

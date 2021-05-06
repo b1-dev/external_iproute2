@@ -88,6 +88,13 @@ WMLEventHandlingElement* toWMLEventHandlingElement(WMLElement* element)
         return static_cast<WMLOptionElement*>(element);
     else if (element->hasTagName(templateTag))
         return static_cast<WMLTemplateElement*>(element);
+        ///M: workground for op01 wml test case.
+    else if (element->hasTagName(pTag)) {
+        Node* parent = element->parentNode();
+        if (!parent || !parent->isWMLElement())
+            return 0;
+        return toWMLEventHandlingElement(static_cast<WMLElement*>(parent));
+    }
 
     return 0;
 }

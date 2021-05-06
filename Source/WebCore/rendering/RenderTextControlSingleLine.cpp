@@ -44,6 +44,12 @@
 #include "Settings.h"
 #include "SimpleFontData.h"
 #include "TextControlInnerElements.h"
+// M+ set default value for wml inputTag
+#if ENABLE(WML)
+#include "WMLInputElement.h"
+#include "WMLNames.h"
+#endif
+// M-
 
 using namespace std;
 
@@ -700,6 +706,14 @@ void RenderTextControlSingleLine::updateFromElement()
             if (!static_cast<HTMLInputElement*>(node())->formControlValueMatchesRenderer())
                 setInnerTextValue(inputElement()->visibleValue());
         }
+        // M+ set default value for wml inputTag
+#if ENABLE(WML)
+        else if (node()->hasTagName(WMLNames::inputTag)) {
+            if (!static_cast<WMLInputElement*>(node())->formControlValueMatchesRenderer())
+                setInnerTextValue(inputElement()->visibleValue());
+        }
+#endif
+        // M-
     }
 
     if (m_searchPopupIsVisible)

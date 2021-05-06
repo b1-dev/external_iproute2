@@ -34,6 +34,11 @@
 #include <wtf/Vector.h>
 #include <wtf/text/StringHash.h>
 
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance
+#include "IntRect.h"
+#endif
+
 namespace WebCore  {
 
 class CachedCSSStyleSheet;
@@ -213,6 +218,14 @@ private:
     // A URL-based map of all resources that are in the cache (including the freshest version of objects that are currently being 
     // referenced by a Web page).
     HashMap<String, CachedResource*> m_resources;
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+public:
+    void startAnimation(const IntRect& visibleScreenRect);
+    HashSet<CachedResourceLoader*> m_cachedResourceLoaders;
+/// @}
+#endif
 };
 
 inline bool MemoryCache::shouldMakeResourcePurgeableOnEviction()

@@ -221,4 +221,3 @@ typedef float CGFloat;
 /* protect ourselves from evil X11 defines */
 #include <bridge/npruntime_internal.h>
 #endif
-

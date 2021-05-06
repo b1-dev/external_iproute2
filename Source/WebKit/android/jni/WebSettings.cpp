@@ -80,6 +80,8 @@ struct FieldIds {
                 "Ljava/lang/String;");
         mDefaultTextEncoding = env->GetFieldID(clazz, "mDefaultTextEncoding",
                 "Ljava/lang/String;");
+        /// M: add for text encoding detector
+        mUsesEncodingDetector = env->GetFieldID(clazz, "mUsesEncodingDetector", "Z");
         mUserAgent = env->GetFieldID(clazz, "mUserAgent",
                 "Ljava/lang/String;");
         mAcceptLanguage = env->GetFieldID(clazz, "mAcceptLanguage", "Ljava/lang/String;");
@@ -161,6 +163,8 @@ struct FieldIds {
         ALOG_ASSERT(mCursiveFontFamily, "Could not find field mCursiveFontFamily");
         ALOG_ASSERT(mFantasyFontFamily, "Could not find field mFantasyFontFamily");
         ALOG_ASSERT(mDefaultTextEncoding, "Could not find field mDefaultTextEncoding");
+        /// M: add for text encoding detector
+        ALOG_ASSERT(mUsesEncodingDetector, "Could not find field mUsesEncodingDetector");
         ALOG_ASSERT(mUserAgent, "Could not find field mUserAgent");
         ALOG_ASSERT(mAcceptLanguage, "Could not find field mAcceptLanguage");
         ALOG_ASSERT(mMinimumFontSize, "Could not find field mMinimumFontSize");
@@ -213,6 +217,8 @@ struct FieldIds {
     jfieldID mCursiveFontFamily;
     jfieldID mFantasyFontFamily;
     jfieldID mDefaultTextEncoding;
+    /// M: add for text encoding detector
+    jfieldID mUsesEncodingDetector;
     jfieldID mUserAgent;
     jfieldID mAcceptLanguage;
     jfieldID mMinimumFontSize;
@@ -377,6 +383,10 @@ public:
 
         str = (jstring)env->GetObjectField(obj, gFieldIds->mDefaultTextEncoding);
         s->setDefaultTextEncodingName(jstringToWtfString(env, str));
+
+        /// M: add for text encoding detector
+        jboolean f = env->GetBooleanField(obj, gFieldIds->mUsesEncodingDetector);
+        s->setUsesEncodingDetector(f);
 
         str = (jstring)env->GetObjectField(obj, gFieldIds->mUserAgent);
         WebFrame::getWebFrame(pFrame)->setUserAgent(jstringToWtfString(env, str));

@@ -42,6 +42,7 @@
 #endif
 
 #if ENABLE(WML)
+#include "WMLAElement.h"
 #include "WMLImageElement.h"
 #include "WMLNames.h"
 #endif
@@ -470,8 +471,10 @@ KURL HitTestResult::absoluteLinkURL() const
         urlString = m_innerURLElement->getAttribute(XLinkNames::hrefAttr);
 #endif
 #if ENABLE(WML)
-    else if (m_innerURLElement->hasTagName(WMLNames::aTag))
-        urlString = m_innerURLElement->getAttribute(hrefAttr);
+    /// M: Add href for go element. @{
+    else if (m_innerURLElement->hasTagName(WMLNames::aTag) || m_innerURLElement->hasTagName(WMLNames::anchorTag))
+        return static_cast<WMLAElement*>(m_innerURLElement.get())->href();
+    /// @}
 #endif
     else
         return KURL();

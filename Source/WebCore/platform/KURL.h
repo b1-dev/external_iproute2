@@ -185,6 +185,13 @@ public:
     // URL (with nothing after it). To clear the query, pass a null string.
     void setQuery(const String&);
 
+	/**
+	 * M: The query may need extra paramter string, which will be
+	 * appended with the existing string and then compose a new string.
+	 * It does not replace the old query string
+	 */
+	void setExtraQuery(const String&);
+
     void setFragmentIdentifier(const String&);
     void removeFragmentIdentifier();
 

@@ -589,8 +589,8 @@ void RenderTextControl::computePreferredLogicalWidths()
         m_maxPreferredLogicalWidth = min(m_maxPreferredLogicalWidth, computeContentBoxLogicalWidth(style()->maxWidth().value()));
         m_minPreferredLogicalWidth = min(m_minPreferredLogicalWidth, computeContentBoxLogicalWidth(style()->maxWidth().value()));
     }
-
-    int toAdd = borderAndPaddingWidth();
+    /// M: add one more pixel padding to fit the specified row number
+    int toAdd = borderAndPaddingWidth() + 1;
 
     m_minPreferredLogicalWidth += toAdd;
     m_maxPreferredLogicalWidth += toAdd;

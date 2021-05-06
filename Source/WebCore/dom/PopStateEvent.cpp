@@ -29,7 +29,30 @@
 
 #include "EventNames.h"
 
+#if ENABLE(HTML5_HISTORY_API)
+/// M: enable HTML5 History.
+#include "History.h"
+#endif
+
 namespace WebCore {
+
+#if ENABLE(HTML5_HISTORY_API)
+/// M: enable HTML5 History. @{
+PopStateEvent::PopStateEvent()
+    : Event(eventNames().popstateEvent, false, true)
+    , m_stateObject(0)
+    , m_history(0)
+{
+}
+
+PopStateEvent::PopStateEvent(PassRefPtr<SerializedScriptValue> stateObject, PassRefPtr<History> history)
+    : Event(eventNames().popstateEvent, false, true)
+    , m_stateObject(stateObject)
+    , m_history(history)
+{
+}
+/// @}
+#endif
 
 PopStateEvent::PopStateEvent(PassRefPtr<SerializedScriptValue> stateObject)
     : Event(eventNames().popstateEvent, false, true)
@@ -40,6 +63,20 @@ PopStateEvent::PopStateEvent(PassRefPtr<SerializedScriptValue> stateObject)
 PopStateEvent::~PopStateEvent()
 {
 }
+
+#if ENABLE(HTML5_HISTORY_API)
+/// M: enable HTML5 History. @{
+PassRefPtr<PopStateEvent> PopStateEvent::create()
+{
+    return adoptRef(new PopStateEvent);
+}
+
+PassRefPtr<PopStateEvent> PopStateEvent::create(PassRefPtr<SerializedScriptValue> serializedState, PassRefPtr<History> history)
+{
+    return adoptRef(new PopStateEvent(serializedState, history));
+}
+/// @}
+#endif
 
 void PopStateEvent::initPopStateEvent(const AtomicString& type, bool canBubble, bool cancelable, PassRefPtr<SerializedScriptValue> stateObject)
 {

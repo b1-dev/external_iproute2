@@ -82,6 +82,8 @@
 #include <wtf/StringExtras.h>
 #include <wtf/UnusedParam.h>
 #include <wtf/text/StringConcatenate.h>
+/// M: add for systrace
+#include "AndroidLog.h"
 
 namespace WebCore {
 
@@ -384,6 +386,8 @@ v8::Local<v8::Value> V8Proxy::runScript(v8::Handle<v8::Script> script, bool isIn
     if (script.IsEmpty())
         return notHandledByInterceptor();
 
+    /// M: add for systrace
+    TRACE_METHOD()
     V8GCController::checkMemoryUsage();
     // Compute the source string and prevent against infinite recursion.
     if (m_recursion >= kMaxRecursionDepth) {
@@ -444,6 +448,8 @@ v8::Local<v8::Value> V8Proxy::runScript(v8::Handle<v8::Script> script, bool isIn
 
 v8::Local<v8::Value> V8Proxy::callFunction(v8::Handle<v8::Function> function, v8::Handle<v8::Object> receiver, int argc, v8::Handle<v8::Value> args[])
 {
+    /// M: add for systrace
+    TRACE_METHOD()
     V8GCController::checkMemoryUsage();
     v8::Local<v8::Value> result;
     {

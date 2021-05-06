@@ -44,6 +44,10 @@
 #include <wtf/PassOwnPtr.h>
 #include <wtf/PassRefPtr.h>
 
+#if ENABLE(PAGE_VISIBILITY_API)
+#include "PageVisibilityState.h"
+#endif
+
 namespace WebCore {
 
 class AXObjectCache;
@@ -301,6 +305,9 @@ public:
 #if ENABLE(FULLSCREEN_API)
     DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitfullscreenchange);
 #endif
+#if ENABLE(PAGE_VISIBILITY_API)
+    DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitvisibilitychange);
+#endif
 
     ViewportArguments viewportArguments() const { return m_viewportArguments; }
 
@@ -373,6 +380,12 @@ public:
     void setDocumentURI(const String&);
 
     virtual KURL baseURI() const;
+
+#if ENABLE(PAGE_VISIBILITY_API)
+    String webkitVisibilityState() const;
+    bool webkitHidden() const;
+    void dispatchVisibilityStateChangeEvent();
+#endif
 
     PassRefPtr<Node> adoptNode(PassRefPtr<Node> source, ExceptionCode&);
 
@@ -1149,6 +1162,10 @@ private:
     PassRefPtr<NodeList> handleZeroPadding(const HitTestRequest&, HitTestResult&) const;
 
     void loadEventDelayTimerFired(Timer<Document>*);
+
+#if ENABLE(PAGE_VISIBILITY_API)
+    PageVisibilityState visibilityState() const;
+#endif
 
     int m_guardRefCount;
 

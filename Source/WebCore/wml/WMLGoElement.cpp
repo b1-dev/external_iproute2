@@ -153,7 +153,9 @@ void WMLGoElement::preparePOSTRequest(ResourceRequest& request, bool inSameDeck,
 {
     request.setHTTPMethod("POST");
 
-    if (inSameDeck && cacheControl != "no-cache") {
+    /// M+ workaround for OP01 PIM website
+    if (inSameDeck && !cacheControl.isEmpty() && cacheControl != "no-cache") {
+    /// M-
         request.setCachePolicy(ReturnCacheDataDontLoad);
         return;
     }
@@ -184,7 +186,11 @@ void WMLGoElement::prepareGETRequest(ResourceRequest& request, const KURL& url)
     RefPtr<FormData> data = createFormData(CString());
 
     KURL remoteURL(url);
-    remoteURL.setQuery(data->flattenToString());
+    /// M: modify @{
+    String query = data->flattenToString();
+    if (!query.isEmpty())
+        remoteURL.setExtraQuery(data->flattenToString());
+    /// @}
     request.setURL(remoteURL);
 }
 
@@ -223,6 +229,15 @@ PassRefPtr<FormData> WMLGoElement::createFormData(const CString& boundary)
     result->appendData(encodedData.data(), encodedData.size());
     return result;
 }
+
+
+/// M: Add href for go element. @{
+KURL WMLGoElement::href() const
+{
+    String href = substituteVariableReferences(getAttribute(HTMLNames::hrefAttr), document(), WMLVariableEscapingEscape);
+    return document()->completeURL(href);
+}
+/// @}
 
 }
 

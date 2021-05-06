@@ -490,6 +490,7 @@ LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
 	page/DOMWindow.cpp \
 	page/DragController.cpp \
 	page/EventHandler.cpp \
+	page/EventSource.cpp \
 	page/FocusController.cpp \
 	page/Frame.cpp \
 	page/FrameActionScheduler.cpp \
@@ -508,6 +509,7 @@ LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
 	page/Page.cpp \
 	page/PageGroup.cpp \
 	page/PageGroupLoadDeferrer.cpp \
+	page/PageVisibilityState.cpp \
 	page/Performance.cpp \
 	page/PerformanceNavigation.cpp \
 	page/PerformanceTiming.cpp \
@@ -632,6 +634,7 @@ LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
 	platform/graphics/SimpleFontData.cpp \
 	platform/graphics/StringTruncator.cpp \
 	platform/graphics/WidthIterator.cpp \
+	platform/graphics/WOFFFileFormat.cpp \
 	\
 	platform/graphics/android/BitmapAllocatorAndroid.cpp \
 	platform/graphics/android/GraphicsLayerAndroid.cpp \
@@ -1205,6 +1208,46 @@ LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
 	svg/graphics/filters/SVGFilterBuilder.cpp \
 	\
 	svg/properties/SVGPathSegListPropertyTearOff.cpp
+endif
+
+ifeq ($(MTK_WML_SUPPORT), yes)
+LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
+	wml/WMLAccessElement.cpp \
+	wml/WMLAElement.cpp \
+	wml/WMLAnchorElement.cpp \
+	wml/WMLBRElement.cpp \
+	wml/WMLCardElement.cpp \
+	wml/WMLDocument.cpp \
+	wml/WMLDoElement.cpp \
+	wml/WMLElement.cpp \
+	wml/WMLErrorHandling.cpp \
+	wml/WMLEventHandlingElement.cpp \
+	wml/WMLFieldSetElement.cpp \
+	wml/WMLFormControlElement.cpp \
+	wml/WMLGoElement.cpp \
+	wml/WMLImageElement.cpp \
+	wml/WMLImageLoader.cpp \
+	wml/WMLInputElement.cpp \
+	wml/WMLInsertedLegendElement.cpp \
+	wml/WMLIntrinsicEvent.cpp \
+	wml/WMLIntrinsicEventHandler.cpp \
+	wml/WMLMetaElement.cpp \
+	wml/WMLNoopElement.cpp \
+	wml/WMLOnEventElement.cpp \
+	wml/WMLOptGroupElement.cpp \
+	wml/WMLOptionElement.cpp \
+	wml/WMLPageState.cpp \
+	wml/WMLPElement.cpp \
+	wml/WMLPostfieldElement.cpp \
+	wml/WMLPrevElement.cpp \
+	wml/WMLRefreshElement.cpp \
+	wml/WMLSelectElement.cpp \
+	wml/WMLSetvarElement.cpp \
+	wml/WMLTableElement.cpp \
+	wml/WMLTaskElement.cpp \
+	wml/WMLTemplateElement.cpp \
+	wml/WMLTimerElement.cpp \
+	wml/WMLVariables.cpp
 endif
 
 LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \

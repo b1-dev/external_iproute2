@@ -79,6 +79,11 @@
 #include "SVGRenderSupport.h"
 #endif
 
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance
+#include "CachedImage.h"
+#endif
+
 using namespace std;
 
 namespace WebCore {
@@ -2422,11 +2427,24 @@ void RenderObject::collectDashboardRegions(Vector<DashboardRegionValue>& regions
 }
 #endif
 
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+bool RenderObject::willRenderImage(CachedImage* img)
+#else
 bool RenderObject::willRenderImage(CachedImage*)
+/// @}
+#endif
 {
     // Without visibility we won't render (and therefore don't care about animation).
     if (style()->visibility() != VISIBLE)
         return false;
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+    if (img && img->isGifImage() && isOutOfScreen(img->getVisibleScreenRect()))
+        return false;
+/// @}
+#endif
 
     // If we're not in a window (i.e., we're dormant from being put in the b/f cache or in a background tab)
     // then we don't want to render either.
@@ -2660,6 +2678,17 @@ bool RenderObject::nodeAtFloatPoint(const HitTestRequest&, HitTestResult&, const
 }
 
 #endif // ENABLE(SVG)
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+bool RenderObject::isOutOfScreen(const WebCore::IntRect& visibleScreenRect)
+{
+    IntRect bound = absoluteBoundingBoxRect();
+    bool bIntersect = bound.intersects(visibleScreenRect);
+    return !bIntersect;
+}
+/// @}
+#endif
 
 } // namespace WebCore
 

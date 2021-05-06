@@ -39,6 +39,10 @@ namespace WebCore {
 
 History::History(Frame* frame)
     : m_frame(frame)
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History.
+    , m_lastStateObjectRequested(0)
+#endif
 {
 }
 
@@ -60,6 +64,37 @@ unsigned History::length() const
         return 0;
     return m_frame->page()->backForward()->count();
 }
+
+#if ENABLE(HTML5_HISTORY_API)
+/// M: enable HTML5 History. @{
+SerializedScriptValue* History::state()
+{
+    m_lastStateObjectRequested = stateInternal();
+    return m_lastStateObjectRequested;
+}
+
+SerializedScriptValue* History::stateInternal() const
+{
+    if (!m_frame)
+        return 0;
+
+    if (HistoryItem* historyItem = m_frame->loader()->history()->currentItem())
+        return historyItem->stateObject();
+
+    return 0;
+}
+
+bool History::stateChanged() const
+{
+    return m_lastStateObjectRequested != stateInternal();
+}
+
+bool History::isSameAsCurrentState(SerializedScriptValue* state) const
+{
+    return state == stateInternal();
+}
+/// @}
+#endif
 
 void History::back()
 {

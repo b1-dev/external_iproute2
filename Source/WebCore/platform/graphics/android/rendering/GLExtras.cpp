@@ -43,6 +43,11 @@
 GLExtras::GLExtras()
     : m_drawExtra(0)
     , m_visibleContentRect()
+/// M: Modified for theme manager
+#if ENABLE(MTK_THEME_MANAGER)
+    , m_themeTextSelectionColor(0)
+    , m_themeCursorRingColor(0)
+#endif
 {
 }
 
@@ -80,6 +85,12 @@ void GLExtras::drawRegion(const SkRegion& region, bool fill, bool drawBorder,
             const SkIRect& ir = rgnIter.rect();
             SkRect r;
             r.set(ir.fLeft, ir.fTop, ir.fRight, ir.fBottom);
+/// M: Modified for theme manager
+#if ENABLE(MTK_THEME_MANAGER)
+            if (m_themeTextSelectionColor != 0) {
+                drawRing(r, m_themeTextSelectionColor, drawMat);
+            } else
+#endif
             drawRing(r, color, drawMat);
             rgnIter.next();
         }
@@ -121,6 +132,12 @@ void GLExtras::drawRegion(const SkRegion& region, bool fill, bool drawBorder,
                 clip.setRect(line);
             }
             r.set(line.fLeft, line.fTop, line.fRight, line.fBottom);
+/// M: Modified for theme manager, maybe also the fill color?
+#if ENABLE(MTK_THEME_MANAGER)
+            if (m_themeCursorRingColor != 0) {
+                drawRing(r, m_themeCursorRingColor, drawMat);
+            } else
+#endif
             drawRing(r, color, drawMat);
             if (startRect.isEmpty()) {
                 startRect.set(line.fLeft, line.fTop, line.fRight, line.fBottom);

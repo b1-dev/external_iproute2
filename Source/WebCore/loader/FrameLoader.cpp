@@ -119,6 +119,9 @@
 #include "ArchiveFactory.h"
 #endif
 
+/// M: Customer specific x-wap-profile
+#include "custom_prop.h"
+
 namespace WebCore {
 
 using namespace HTMLNames;
@@ -241,6 +244,13 @@ void FrameLoader::init()
     m_didCallImplicitClose = true;
 
     m_networkingContext = m_client->createNetworkingContext();
+
+    /// M: Customer specific x-wap-profile @{
+    char value[MAX_VALUE_LEN];
+    if (custom_get_string(MODULE_BROWSER, UAPROF_URL, value, 0) > 0)
+        m_customXWapProfile = String(value);
+    /// @}
+
 }
 
 void FrameLoader::setDefersLoading(bool defers)
@@ -2713,6 +2723,10 @@ void FrameLoader::addExtraFieldsToRequest(ResourceRequest& request, FrameLoadTyp
 
     applyUserAgent(request);
     
+    /// M: Customer specific x-wap-profile
+    if (!m_customXWapProfile.isNull())
+        request.setHTTPHeaderField("x-wap-profile", m_customXWapProfile);
+
     // If we inherit cache policy from a main resource, we use the DocumentLoader's 
     // original request cache policy for two reasons:
     // 1. For POST requests, we mutate the cache policy for the main resource,

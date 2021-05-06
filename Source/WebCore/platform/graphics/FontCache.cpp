@@ -184,10 +184,19 @@ FontPlatformData* FontCache::getCachedFontPlatformData(const FontDescription& fo
         gFontPlatformDataCache = new FontPlatformDataCache;
         platformInit();
     }
+    
+#ifdef FONT_SOFTWARE_RENDER
+    bool bold = (fontDescription.weight() >= FontWeightBold) ? true : false;
+    bool italic = fontDescription.italic();
 
+    FontPlatformDataCacheKey key(familyName, fontDescription.computedPixelSize(), FontWeightNormal, false,
+                                 fontDescription.usePrinterFont(), fontDescription.renderingMode(), fontDescription.orientation(),
+                                 fontDescription.textOrientation(), fontDescription.widthVariant());
+#else
     FontPlatformDataCacheKey key(familyName, fontDescription.computedPixelSize(), fontDescription.weight(), fontDescription.italic(),
                                  fontDescription.usePrinterFont(), fontDescription.renderingMode(), fontDescription.orientation(),
                                  fontDescription.textOrientation(), fontDescription.widthVariant());
+#endif
     FontPlatformData* result = 0;
     bool foundResult;
     FontPlatformDataCache::iterator it = gFontPlatformDataCache->find(key);
@@ -209,6 +218,12 @@ FontPlatformData* FontCache::getCachedFontPlatformData(const FontDescription& fo
         if (result)
             gFontPlatformDataCache->set(key, new FontPlatformData(*result)); // Cache the result under the old name.
     }
+
+#ifdef FONT_SOFTWARE_RENDER
+    if (result != 0) {
+        result->setFakeAttr(bold, italic);
+    }
+#endif
 
     return result;
 }

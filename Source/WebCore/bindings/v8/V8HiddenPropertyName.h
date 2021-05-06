@@ -35,6 +35,20 @@
 
 namespace WebCore {
 
+#if ENABLE(HTML5_HISTORY_API)
+/// M: enable HTML5 History. @{
+#define V8_HIDDEN_PROPERTIES(V) \
+    V(objectPrototype) \
+    V(listener) \
+    V(attributeListener) \
+    V(scriptState) \
+    V(devtoolsInjectedScript) \
+    V(sleepFunction) \
+    V(toStringString) \
+    V(event) \
+    V(state)
+/// @}
+#else
 #define V8_HIDDEN_PROPERTIES(V) \
     V(objectPrototype) \
     V(listener) \
@@ -44,7 +58,7 @@ namespace WebCore {
     V(sleepFunction) \
     V(toStringString) \
     V(event)
-
+#endif
 
     class V8HiddenPropertyName {
     public:

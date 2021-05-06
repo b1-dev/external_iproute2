@@ -37,7 +37,12 @@
 #define LOG_TAG "PhoneNumberDetector"
 #include <cutils/log.h>
 
+#if ENABLE(IMPROVE_PHONE_DETECTION)
+/// M: Improve phone detection.
+#define PHONE_PATTERN "+00000 - (00000) - 000 - 000 - 0000"
+#else
 #define PHONE_PATTERN "(200) /-.\\ 100 -. 0000"
+#endif
 
 static const char kTelSchemaPrefix[] = "tel:";
 static const char kEmailSchemaPrefix[] = "mailto:";
@@ -120,6 +125,151 @@ void FindResetNumber(FindState* state)
     state->mStorePtr = state->mStore;
 }
 
+#if ENABLE(IMPROVE_PHONE_DETECTION)
+/// M: Improve phone detection. @{
+FoundState FindPartialNumber(const UChar* chars, unsigned length,
+    FindState* s)
+{
+    char* pattern = s->mPattern;
+    UChar* store = s->mStorePtr;
+    const UChar* start = chars;
+    const UChar* end = chars + length;
+    const UChar* lastDigit = NULL;
+    bool openParen = false;
+    bool startWithParenPlus = false;
+    int continueDigit = 0;
+    string16 search16(chars, length);
+    std::string searchSpace = UTF16ToUTF8(search16);
+    do {
+        bool initialized = s->mInitialized;
+        openParen = false;
+        continueDigit = 0;
+        while (chars < end) {
+            if (initialized == false) {
+                s->mBackTwo = s->mBackOne;
+                s->mBackOne = s->mCurrent;
+            }
+            UChar ch = s->mCurrent = *chars;
+
+            if (!WTF::isASCIIDigit(ch) && ch != '+') {
+                if ((ch == ' ' || ch == '-' || ch == '(' || ch == ')') && (continueDigit > NAVIGATION_ALLOW_MAX_CONTINUE_DIGIT_LENGTH)) {
+                    *store = '\0';
+                    goto checkMatch;
+                }
+                continueDigit = 0;
+            } else
+                continueDigit++;
+
+            do {
+                char patternChar = *pattern;
+                switch (patternChar) {
+                    case '+':
+                        if (ch == patternChar) {
+                            if (initialized == false) {
+                                s->mStartResult = chars - start;
+                                initialized = true;
+                            }
+                            *store++ = ch;
+                            pattern++;
+                            lastDigit = chars;
+                            goto nextChar;
+                        }
+                        if (*chars == '(' && *(chars+1) == '+') {
+                            if (initialized == false) {
+                                s->mStartResult = chars - start;
+                                initialized = true;
+                            }
+                            startWithParenPlus = true;
+                            goto nextChar;
+                        }
+                        pattern = pattern + strcspn(s->mPattern, "(") - 1;
+                        goto commonPunctuation;
+                    case '0':
+                        if (initialized == false) {
+                            s->mStartResult = chars - start;
+                            initialized = true;
+                        }
+                        if (ch < patternChar || ch > '9') {
+                            if (startWithParenPlus && ch == ')') {
+                                startWithParenPlus = false;
+                                goto nextChar;
+                            }
+                            if ((ch == ' ' || ch == '-' || ch == '(' || ch == ')') && pattern && *(pattern-1) == '0')
+                                goto commonPunctuation;
+                            goto resetPattern;
+                        }
+                        *store++ = ch;
+                        pattern++;
+                        lastDigit = chars;
+                        goto nextChar;
+                    case '\0':
+                        if (WTF::isASCIIDigit(ch) == false) {
+                            *store = '\0';
+                            goto checkMatch;
+                        }
+                        goto resetPattern;
+                    case ' ':
+                        if (ch == patternChar)
+                            goto nextChar;
+                        break;
+                    case '(':
+                        if (ch == patternChar) {
+                            if (initialized == false) {
+                            s->mStartResult = chars - start;
+                            initialized = true;
+                            }
+                            s->mOpenParen = true;
+                        }
+                        goto commonPunctuation;
+                    case ')':
+                        if ((ch == patternChar) ^ s->mOpenParen)
+                            goto resetPattern;
+                        else if ((ch == patternChar) && s->mOpenParen)
+                            openParen = true;
+                    default:
+                    commonPunctuation:
+                        if (ch == patternChar) {
+                            pattern++;
+                            goto nextChar;
+                        }
+                }
+            } while (++pattern); // never false
+    nextChar:
+            chars++;
+        }
+        break;
+resetPattern:
+        if (s->mContinuationNode)
+            return FOUND_NONE;
+        int testSize = store - (s->mStore);
+        bool b = false;
+        if (*pattern == '0') {
+            if (testSize >= NAVIGATION_MIN_PHONE_LENGTH && testSize <= NAVIGATION_MAX_PHONE_LENGTH)
+                goto checkMatch;
+        }
+        FindResetNumber(s);
+        pattern = s->mPattern;
+        store = s->mStorePtr;
+    } while (++chars < end);
+checkMatch:
+    if (WTF::isASCIIDigit(s->mBackOne))
+        return FOUND_NONE;
+    *store = '\0';
+    s->mStorePtr = store;
+    s->mPattern = pattern;
+    s->mEndResult = lastDigit - start + 1;
+    char pState = pattern[0];
+    int size = store - (s->mStore);
+    bool bSize = false;
+    if (size >= NAVIGATION_MIN_PHONE_LENGTH && size <= NAVIGATION_MAX_PHONE_LENGTH)
+        bSize = true;
+
+    return pState == '\0' ? FOUND_COMPLETE : pState == '+' || (WTF::isASCIIDigit(pState) && WTF::isASCIIDigit(pattern[-1]) && (bSize == false)) ?
+        FOUND_NONE : (WTF::isASCIIDigit(pState) && WTF::isASCIIDigit(pattern[-1]) && bSize) ? FOUND_COMPLETE :
+        (((!WTF::isASCIIDigit(pState) && WTF::isASCIIDigit(pattern[-1])) || (WTF::isASCIIDigit(pState) && !WTF::isASCIIDigit(pattern[-1])))&& bSize) ? FOUND_COMPLETE : FOUND_PARTIAL;
+}
+/// @}
+#else
 FoundState FindPartialNumber(const UChar* chars, unsigned length,
     FindState* s)
 {
@@ -205,6 +355,7 @@ checkMatch:
     return pState == '\0' ? FOUND_COMPLETE : pState == '(' || (WTF::isASCIIDigit(pState) && WTF::isASCIIDigit(pattern[-1])) ?
         FOUND_NONE : FOUND_PARTIAL;
 }
+#endif
 
 FoundState FindPartialEMail(const UChar* chars, unsigned length,
     FindState* s)

@@ -203,6 +203,10 @@ public:
     RenderReplica* reflection() const { return m_reflection; }
     RenderLayer* reflectionLayer() const;
 
+    /// M: refactor the z-order layers for ALPS00330595 @{
+    ///    called when removeChild
+    void checkRemovedLayerInZOrderList(RenderLayer*);
+    /// M: @}
     const RenderLayer* root() const
     {
         const RenderLayer* curr = this;

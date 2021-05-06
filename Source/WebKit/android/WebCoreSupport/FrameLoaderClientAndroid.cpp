@@ -229,17 +229,38 @@ void FrameLoaderClientAndroid::dispatchDidChangeLocationWithinPage() {
 
 void FrameLoaderClientAndroid::dispatchDidPushStateWithinPage()
 {
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History. @{
+    WTF::String url(m_frame->document()->url().string());
+    m_webFrame->updateUrl(url);
+    /// @}
+#else
     notImplemented();
+#endif
 }
 
 void FrameLoaderClientAndroid::dispatchDidReplaceStateWithinPage()
 {
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History. @{
+    WTF::String url(m_frame->document()->url().string());
+    m_webFrame->updateUrl(url);
+    /// @}
+#else
     notImplemented();
+#endif
 }
 
 void FrameLoaderClientAndroid::dispatchDidPopStateWithinPage()
 {
+#if ENABLE(HTML5_HISTORY_API)
+    /// M: enable HTML5 History. @{
+    WTF::String url(m_frame->document()->url().string());
+    m_webFrame->updateUrl(url);
+    /// @}
+#else
     notImplemented();
+#endif
 }
 
 void FrameLoaderClientAndroid::dispatchWillClose() {
@@ -258,6 +279,11 @@ void FrameLoaderClientAndroid::dispatchDidReceiveIcon() {
     // If the request fails, try the original request url.
     if (!icon) {
         DocumentLoader* docLoader = m_frame->loader()->activeDocumentLoader();
+
+        /// M: Fix ALPS00348655 docLoader null pointer after WebView destroy
+        if (!docLoader)
+            return;
+
         KURL originalURL = docLoader->originalRequest().url();
         // FIXME: This method should not be used from outside WebCore and will be removed.
         // http://trac.webkit.org/changeset/81484
@@ -799,6 +825,12 @@ bool FrameLoaderClientAndroid::canShowMIMEType(const String& mimeType) const {
     // FIXME: This looks like it has to do with whether or not a type can be
     // shown "internally" (i.e. inside the browser) regardless of whether
     // or not the browser is doing the rendering, e.g. a full page plugin.
+
+	/// M: Add to support OMA Download and MTK DRM
+    if (mimeType == "application/vnd.oma.dd+xml" ||
+		mimeType == "application/vnd.oma.drm.rights+xml")
+		return false;
+
     if (MIMETypeRegistry::isSupportedImageResourceMIMEType(mimeType) ||
             MIMETypeRegistry::isSupportedNonImageMIMEType(mimeType) ||
             MIMETypeRegistry::isSupportedJavaScriptMIMEType(mimeType) ||

@@ -42,6 +42,9 @@ public:
     void registerVariableSetter(WMLSetvarElement*);
     void deregisterVariableSetter(WMLSetvarElement*);
 
+    /// M: Add href for go element.
+    virtual KURL href() const { return KURL(); }
+
 protected:
     WMLTaskElement(const QualifiedName& tagName, Document*);
     virtual ~WMLTaskElement();

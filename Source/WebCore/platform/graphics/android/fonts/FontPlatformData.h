@@ -94,6 +94,9 @@ public:
 
     bool isFakeBold() const { return mFakeBold; }
     bool isFakeItalic() const { return mFakeItalic; }
+#ifdef FONT_SOFTWARE_RENDER
+    void setFakeAttr(bool fakeBold, bool fakeItalic);
+#endif
 
 private:
     class RefCountedHarfbuzzFace : public RefCounted<RefCountedHarfbuzzFace> {
@@ -123,6 +126,10 @@ private:
     FontOrientation mOrientation;
     TextOrientation mTextOrientation;
     mutable RefPtr<RefCountedHarfbuzzFace> m_harfbuzzFace;
+#ifdef FONT_SOFTWARE_RENDER
+    unsigned    mForceFakeBold;
+    unsigned    mForceFakeItalic;
+#endif
 
     static SkTypeface* hashTableDeletedFontValue() {
         return reinterpret_cast<SkTypeface*>(-1);

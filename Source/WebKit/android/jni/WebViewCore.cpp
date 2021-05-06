@@ -171,6 +171,20 @@ FILE* gRenderTreeFile = 0;
 #include "RenderLayerCompositor.h"
 #endif
 
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+#include "CachedImage.h"
+#include "MemoryCache.h"
+/// @}
+#endif
+
+/// M: enhance WML input element support
+#if ENABLE(WML)
+#include "WMLNames.h"
+#include "WMLInputElement.h"
+#endif
+/// @}
+
 #define FOREGROUND_TIMER_INTERVAL 0.004 // 4ms
 #define BACKGROUND_TIMER_INTERVAL 1.0 // 1s
 
@@ -826,6 +840,8 @@ void WebViewCore::notifyAnimationStarted()
 
 BaseLayerAndroid* WebViewCore::createBaseLayer(GraphicsLayerAndroid* root)
 {
+    /// M: add for systrace
+    TRACE_METHOD()
     // We set the background color
     Color background = Color::white;
 
@@ -1494,7 +1510,8 @@ bool WebViewCore::selectWordAt(int x, int y)
 
     SelectionController* sc = focusedFrame()->selection();
     bool wordSelected = false;
-    if (!sc->contains(point) && (node->isContentEditable() || node->isTextNode()) && !result.isLiveLink()
+    /// M: ALPS00339501 - allow links can be selected
+    if (!sc->contains(point) && (node->isContentEditable() || node->isTextNode()) /*&& !result.isLiveLink()*/
             && node->dispatchEvent(Event::create(eventNames().selectstartEvent, true, true))) {
         VisiblePosition pos(node->renderer()->positionForPoint(result.localPoint()));
         wordSelected = selectWordAroundPosition(node->document()->frame(), pos);
@@ -2089,6 +2106,11 @@ void WebViewCore::sendPluginVisibleScreen()
     for (; iter < stop; ++iter) {
         (*iter)->setVisibleScreen(visibleRect, m_scale);
     }
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+    /// M: improve gif animation performance
+    updateScreenPosInfo();
+#endif
 }
 
 void WebViewCore::sendPluginSurfaceReady()
@@ -2203,7 +2225,8 @@ void WebViewCore::setSelection(int start, int end)
     if (focus->isElementNode()) {
         WebCore::Element* element = static_cast<WebCore::Element*>(focus);
         if (WebCore::InputElement* inputElement = element->toInputElement())
-            isPasswordField = static_cast<WebCore::HTMLInputElement*>(inputElement)->isPasswordField();
+            /// M: enhance WML input element support
+            isPasswordField = inputElement->isPasswordField();
     }
     // For password fields, this is done in the UI side via
     // bringPointIntoView, since the UI does the drawing.
@@ -3038,8 +3061,13 @@ void WebViewCore::openFileChooser(PassRefPtr<WebCore::FileChooser> chooser)
     WTF::String wtfString = jstringToWtfString(env, jName);
     env->DeleteLocalRef(jName);
 
-    if (!wtfString.isEmpty())
+    if (!wtfString.isEmpty()) {
+        /// M: If the URI path start with "file://", then do the URL decoding. @{
+        if (wtfString.startsWith("file://"))
+            wtfString = decodeURLEscapeSequences(wtfString);
+        /// @}
         chooser->chooseFile(wtfString);
+    }
 }
 
 void WebViewCore::listBoxRequest(WebCoreReply* reply, const uint16_t** labels, size_t count, const int enabled[], size_t enabledCount,
@@ -3321,6 +3349,18 @@ WebViewCore::InputType WebViewCore::getInputType(Node* node)
     if (node->isContentEditable())
         return WebViewCore::TEXT_AREA;
 
+/// M: enhance WML input element support @{
+#if ENABLE(WML)
+    if (node->hasTagName(WebCore::WMLNames::inputTag)) {
+        WMLInputElement* htmlInput = static_cast<WMLInputElement*>(node);
+        if (htmlInput->isPasswordField())
+            return WebViewCore::PASSWORD;
+        if (htmlInput->isTextField())
+            return WebViewCore::NORMAL_TEXT_FIELD;
+    }
+#endif
+/// @}
+
     return WebViewCore::NONE;
 }
 
@@ -3331,6 +3371,15 @@ int WebViewCore::getMaxLength(Node* node)
         HTMLInputElement* htmlInput = static_cast<HTMLInputElement*>(node);
         maxLength = htmlInput->maxLength();
     }
+/// M: enhance WML input element support @{
+#if ENABLE(WML)
+    else if (node->hasTagName(WebCore::WMLNames::inputTag)) {
+        WMLInputElement* wmlInput = static_cast<WMLInputElement*>(node);
+        maxLength = wmlInput->maxLength();
+    }
+#endif
+/// @}
+
     return maxLength;
 }
 
@@ -3341,6 +3390,15 @@ String WebViewCore::getFieldName(Node* node)
         HTMLInputElement* htmlInput = static_cast<HTMLInputElement*>(node);
         name = htmlInput->name();
     }
+/// M: enhance WML input element support @{
+#if ENABLE(WML)
+    else if (node->hasTagName(WebCore::WMLNames::inputTag)) {
+        WMLInputElement* wmlInput = static_cast<WMLInputElement*>(node);
+        name = wmlInput->formControlName();
+    }
+#endif
+/// @}
+
     return name;
 }
 
@@ -4998,6 +5056,56 @@ static int FindNext(JNIEnv* env, jobject obj, jint nativeClass,
     return viewImpl->findNextOnPage(forward);
 }
 
+static void SetPageVisibility(JNIEnv* env, jobject obj, jint nativeClass, jint visibilityState)
+{
+#if ENABLE(PAGE_VISIBILITY_API)
+	WebViewCore* viewImpl = reinterpret_cast<WebViewCore*>(nativeClass);
+    if (!viewImpl)
+        return;
+    PageVisibilityState newState = PageVisibilityStateVisible;
+    switch (visibilityState) {
+    case 0:
+        newState = PageVisibilityStateVisible;
+        break;
+    case 1:
+        newState = PageVisibilityStateHidden;
+        break;
+    case 2:
+        newState = PageVisibilityStatePrerender;
+        break;
+    case 3:
+        newState = PageVisibilityStatePreview;
+        break;
+    }
+    WebCore::Frame* mainFrame = viewImpl->mainFrame();
+    if (mainFrame && mainFrame->page()) {
+    	mainFrame->page()->setVisibilityState(newState, false);
+    }
+#endif
+}
+
+#if ENABLE(IMPROVE_ANIMATED_GIF_PERFORMANCE)
+/// M: improve gif animation performance @{
+void WebViewCore::updateScreenPosInfo()
+{
+    if (CachedImage::getEnableGifAnimation() == true) {
+        IntRect rcScreen(m_scrollOffsetX, m_scrollOffsetY, m_screenWidth, m_screenHeight);
+        WebCore::memoryCache()->startAnimation(rcScreen);
+    }
+}
+/// @}
+#endif
+
+/// M: do update screen size implementation, note only for Email application @{
+static void nativeUpdateScreenSize(JNIEnv* env, jobject obj, jint nativeClass, jint screenWidth, jint screenHeight) {
+    WebViewCore* viewImpl = reinterpret_cast<WebViewCore*>(nativeClass);
+    WebCore::Frame* mainFrame = viewImpl->mainFrame();
+    WebCoreViewBridge* window = mainFrame->view()->platformWidget();
+    window->setSize(screenWidth, screenWidth);
+    window->setVisibleSize(screenWidth, screenHeight);
+}
+/// }@
+
 // ----------------------------------------------------------------------------
 
 /*
@@ -5115,6 +5223,10 @@ static JNINativeMethod gJavaWebViewCoreMethods[] = {
     { "nativeFindNext", "(IZ)I",
         (void*) FindNext },
     { "nativeSetInitialFocus", "(II)V", (void*) SetInitialFocus },
+    { "nativeSetPageVisibility", "(II)V", (void*) SetPageVisibility },
+/// M: update screen size used only by Email APP @{
+    { "nativeUpdateScreenSize", "(III)V", (void*) nativeUpdateScreenSize },
+/// }@
 };
 
 int registerWebViewCore(JNIEnv* env)

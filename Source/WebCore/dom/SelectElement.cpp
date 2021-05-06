@@ -499,7 +499,15 @@ void SelectElement::restoreFormControlState(SelectElementData& data, Element* el
 void SelectElement::parseMultipleAttribute(SelectElementData& data, Element* element, Attribute* attribute)
 {
     bool oldUsesMenuList = data.usesMenuList();
-    data.setMultiple(!attribute->isNull());
+    /// M+ If using multiple="false" attribute in select element, indicates that user don't need multiple.
+    // So we disable multiple same as IE.
+    // data.setMultiple(!attribute->isNull());
+    if (attribute->isNull() || equalIgnoringCase(attribute->value().string(), "false")) {
+        data.setMultiple(false);
+    } else {
+        data.setMultiple(true);
+    }
+    /// M-
     toSelectElement(element)->updateValidity();
     if (oldUsesMenuList != data.usesMenuList() && element->attached()) {
         element->detach();

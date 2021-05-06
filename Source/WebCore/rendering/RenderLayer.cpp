@@ -1055,12 +1055,50 @@ void RenderLayer::addChild(RenderLayer* child, RenderLayer* beforeChild)
 #endif
 }
 
+/// M: refactor the z-order layers for ALPS00330595
+///    once layer has been removed need check the layer included in z-order list
+void RenderLayer::checkRemovedLayerInZOrderList(RenderLayer* oldChild)
+{
+    RenderLayer* stackingLayer = stackingContext();
+    if (!stackingLayer)
+        return;
+
+    int pos = 1;
+    Vector<RenderLayer*>* zOrderList = 0;
+    if (0 != (zOrderList = stackingLayer->posZOrderList()))
+        ++pos;
+    else
+        zOrderList = stackingLayer->negZOrderList();
+
+    while (zOrderList && pos > 0) {
+        size_t listSize = zOrderList->size();
+        for (size_t i = 0; i < listSize; ++i) {
+            if (zOrderList->at(i) == oldChild) {
+                // dirty z-order List, and ask repaint
+                dirtyZOrderLists();
+                dirtyStackingContextZOrderLists();
+                setNeedsFullRepaint();
+                clearClipRectsIncludingDescendants();
+                return;
+            }
+        }
+        if(2 == pos)
+            zOrderList = stackingLayer->negZOrderList();
+        pos--;
+    }
+}
+
+
 RenderLayer* RenderLayer::removeChild(RenderLayer* oldChild)
 {
 #if USE(ACCELERATED_COMPOSITING)
     if (!renderer()->documentBeingDestroyed())
         compositor()->layerWillBeRemoved(this, oldChild);
 #endif
+    /// M: refactor z order layers for ALPS00330595 @{
+    if (!oldChild->isNormalFlowOnly())
+        checkRemovedLayerInZOrderList(oldChild);
+    /// M: @}
 
     // remove the child
     if (oldChild->previousSibling())

@@ -736,7 +736,10 @@
 #define ENABLE_LINK_PREFETCH 1
 #define ENABLE_WEB_TIMING 1
 #define ENABLE_MEDIA_CAPTURE 1
-
+/// M: enable blob response type of XMLHttpRequest
+#define ENABLE_XHR_RESPONSE_BLOB 1
+/// M: enable EVENTSOURCE for server-sent event
+#define ENABLE_EVENTSOURCE 1
 // Android ENABLE guards not present upstream
 #define ENABLE_COMPOSITED_FIXED_ELEMENTS 1 // FIXME: Rename to ENABLE_ANDROID_COMPOSITED_FIXED_ELEMENTS
 #define ENABLE_APPLICATION_INSTALLED 1 // FIXME: Rename to ENABLE_ANDROID_APPLICATION_INSTALLED
@@ -777,6 +780,11 @@
 #define ANDROID_DUMP_DISPLAY_TREE
 // Animated GIF support.
 #define ANDROID_ANIMATED_GIF
+
+#if defined(ANDROID_ANIMATED_GIF) && defined(ANDROID_LARGE_MEMORY_DEVICE)
+#define ENABLE_IMPROVE_ANIMATED_GIF_PERFORMANCE 1
+#endif
+
 // apple-touch-icon support in <link> tags
 #define ANDROID_APPLE_TOUCH_ICON
 // track changes to the style that may change what is drawn
@@ -784,6 +792,18 @@
 
 // This is present in JavaScriptCore/config.h, which Android does not use.
 #define WTF_CHANGES 1
+
+#ifndef ENABLE_WML
+#define ENABLE_WML 0
+#endif
+
+/// M: Theme Manager @}
+#if MTK_THEMEMANAGER_APP
+#define ENABLE_MTK_THEME_MANAGER 1
+#else
+#define ENABLE_MTK_THEME_MANAGER 0
+#endif
+/// @}
 #endif /* PLATFORM(ANDROID) */
 
 #if PLATFORM(WIN) && !OS(WINCE)
@@ -1304,5 +1324,12 @@
 #if PLATFORM(QT) || PLATFORM(GTK)
 #define WTF_USE_UNIX_DOMAIN_SOCKETS 1
 #endif
+
+/// M: enable HTML5 features
+#define ENABLE_HTML5_HISTORY_API 1
+#define ENABLE_PAGE_VISIBILITY_API 1
+
+/// M: Improve phone detection.
+#define ENABLE_IMPROVE_PHONE_DETECTION 1
 
 #endif /* WTF_Platform_h */

@@ -48,6 +48,8 @@ public:
     virtual bool isURLAttribute(Attribute*) const;
 
     virtual String target() const;
+    /// M: Substitute WML variable
+    virtual KURL href() const;
 };
 
 }

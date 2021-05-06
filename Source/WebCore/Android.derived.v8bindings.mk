@@ -39,6 +39,13 @@ ifeq ($(ENABLE_SVG), true)
     FEATURE_DEFINES += ENABLE_SVG=1
 endif
 
+ifeq ($(MTK_WML_SUPPORT), yes)
+FEATURE_DEFINES += ENABLE_WML=1
+endif
+
+# M : add EVENTSOURCE support for server-sent event
+FEATURE_DEFINES += ENABLE_EVENTSOURCE=1
+
 # CSS
 GEN := \
     $(intermediates)/bindings/V8CSSCharsetRule.h \
@@ -778,3 +785,17 @@ $(GEN): PRIVATE_CUSTOM_TOOL = perl -I $(PRIVATE_PATH)/bindings/scripts $< --tags
 $(GEN): $(LOCAL_PATH)/dom/make_names.pl $(LOCAL_PATH)/mathml/mathtags.in $(LOCAL_PATH)/mathml/mathattrs.in
 	$(transform-generated-source)
 LOCAL_GENERATED_SOURCES += $(GEN)
+
+# WML tag and attribute names
+ifeq ($(MTK_WML_SUPPORT), yes)
+GEN:= \
+    $(intermediates)/WMLNames.cpp \
+    $(intermediates)/WMLNames.h \
+    $(intermediates)/WMLElementFactory.cpp \
+    $(intermediates)/WMLElementFactory.h 
+$(GEN): PRIVATE_PATH := $(LOCAL_PATH)
+$(GEN): PRIVATE_CUSTOM_TOOL = perl -I $(PRIVATE_PATH)/bindings/scripts $< --tags $(PRIVATE_PATH)/wml/WMLTagNames.in --attrs $(PRIVATE_PATH)/wml/WMLAttributeNames.in --factory --wrapperFactoryV8 --output $(dir $@)
+$(GEN): $(LOCAL_PATH)/dom/make_names.pl $(LOCAL_PATH)/wml/WMLTagNames.in $(LOCAL_PATH)/wml/WMLAttributeNames.in
+	$(transform-generated-source)
+LOCAL_GENERATED_SOURCES += $(GEN)
+endif

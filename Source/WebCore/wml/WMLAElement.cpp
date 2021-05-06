@@ -43,6 +43,8 @@
 #include "RenderBox.h"
 #include "ResourceHandle.h"
 #include "WMLNames.h"
+/// M: Substitute WML variable
+#include "WMLVariables.h"
 
 namespace WebCore {
 
@@ -129,7 +131,10 @@ void WMLAElement::defaultEventHandler(Event* event)
         }
 
         if (isLinkClick(event)) {
-            handleLinkClick(event, document(), stripLeadingAndTrailingHTMLSpaces(getAttribute(HTMLNames::hrefAttr)), target(), event);
+            /// M: Substitute WML variable @{
+            String href = substituteVariableReferences(getAttribute(HTMLNames::hrefAttr), document(), WMLVariableEscapingEscape);
+            handleLinkClick(event, document(), stripLeadingAndTrailingHTMLSpaces(href), target(), event);
+            /// }@
             return;
         }
     }
@@ -151,6 +156,13 @@ bool WMLAElement::isURLAttribute(Attribute *attr) const
 String WMLAElement::target() const
 {
     return getAttribute(HTMLNames::targetAttr);
+}
+
+/// M: Substitute WML variable
+KURL WMLAElement::href() const
+{
+    String href = substituteVariableReferences(getAttribute(HTMLNames::hrefAttr), document(), WMLVariableEscapingEscape);
+    return document()->completeURL(href);
 }
 
 }

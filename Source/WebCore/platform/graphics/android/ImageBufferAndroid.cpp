@@ -99,6 +99,23 @@ PassRefPtr<Image> ImageBuffer::copyImage() const
     return image;
 }
 
+/// M: added for HTML5-benchmark performance @{
+PassRefPtr<Image> ImageBuffer::getContextImageRef() const
+{
+    SkCanvas* canvas = context()->platformContext()->getCanvas();
+    if (!canvas)
+        return 0;
+    SkDevice* device = canvas->getDevice();
+    const SkBitmap& orig = device->accessBitmap(false);
+
+    SkBitmapRef* ref = new SkBitmapRef(orig);
+    RefPtr<Image> image = BitmapImage::create(ref, 0);
+    ref->unref();
+
+    return image;
+}
+/// M: @}
+
 void ImageBuffer::clip(GraphicsContext* context, const FloatRect& rect) const
 {
     SkDebugf("xxxxxxxxxxxxxxxxxx clip not implemented\n");
@@ -106,7 +123,10 @@ void ImageBuffer::clip(GraphicsContext* context, const FloatRect& rect) const
 
 void ImageBuffer::draw(GraphicsContext* context, ColorSpace styleColorSpace, const FloatRect& destRect, const FloatRect& srcRect, CompositeOperator op, bool useLowQualityScale)
 {
-    RefPtr<Image> imageCopy = copyImage();
+    /// M: modified for HTML5-benchmark performance
+    /// just get image ref from cavnas
+    /// skia drawImage will copy again.
+    RefPtr<Image> imageCopy = getContextImageRef();
     context->drawImage(imageCopy.get(), styleColorSpace, destRect, srcRect, op, useLowQualityScale);
 }
 

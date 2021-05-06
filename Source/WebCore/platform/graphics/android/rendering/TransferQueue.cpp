@@ -37,6 +37,10 @@
 #include "Tile.h"
 #include "TileTexture.h"
 #include "TilesManager.h"
+/// M: ImageTexture should releaseImage from ALPS00325560 @{
+#include "ImageTexture.h"
+#include "ImagesManager.h"
+/// M @}
 #include <android/native_window.h>
 #include <gui/SurfaceTexture.h>
 #include <gui/SurfaceTextureClient.h>
@@ -448,7 +452,14 @@ void TransferQueue::addItemInPureColorQueue(const TileRenderInfo* renderInfo)
 void TransferQueue::clearItemInTranferQueue(int index)
 {
     m_transferQueue[index].savedTilePtr = 0;
-    SkSafeUnref(m_transferQueue[index].savedTilePainter);
+    /// M: ImageTexture should releaseImage from ALPS00325560 @{
+    if (m_transferQueue[index].savedTilePainter && m_transferQueue[index].savedTilePainter->type() == TilePainter::Image) {
+        ImageTexture* image = static_cast<ImageTexture*>(m_transferQueue[index].savedTilePainter);
+        ImagesManager::instance()->releaseImage(image->imageCRC());
+    }else
+        SkSafeUnref(m_transferQueue[index].savedTilePainter);
+    /// M: @}
+
     m_transferQueue[index].savedTilePainter = 0;
     m_transferQueue[index].status = emptyItem;
 }

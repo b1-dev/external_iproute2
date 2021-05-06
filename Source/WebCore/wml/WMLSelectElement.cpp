@@ -552,10 +552,19 @@ String WMLSelectElement::ivalue() const
     return parseValueSubstitutingVariableReferences(getAttribute(ivalueAttr));
 }
 
-void WMLSelectElement::listBoxSelectItem(int, bool, bool, bool)
+/// M+ Add for wml multiple selection.
+void WMLSelectElement::listBoxSelectItem(int listIndex, bool allowMultiplySelections, bool shift, bool fireOnChangeNow)
 {
     /* Dummy implementation as listBoxSelectItem is pure virtual in SelectElement class */
+    if (!multiple())
+        setSelectedIndexByUser(listToOptionIndex(listIndex), true, fireOnChangeNow);
+    else {
+        updateSelectedState(m_data, this, listIndex, allowMultiplySelections, shift);
+        if (fireOnChangeNow)
+            listBoxOnChange();
+    }
 }
+/// M-
 
 }
 

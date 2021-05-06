@@ -289,7 +289,11 @@ PassRefPtr<CSSStyleSheet> DOMImplementation::createCSSStyleSheet(const String&, 
 
 bool DOMImplementation::isXMLMIMEType(const String& mimeType)
 {
+#if ENABLE(WML)
+    if (mimeType == "text/xml" || mimeType == "application/xml" || mimeType == "text/xsl" || mimeType == "text/vnd.wap.wml")    // Add text/vnd.wap.wml to support wml.
+#else
     if (mimeType == "text/xml" || mimeType == "application/xml" || mimeType == "text/xsl")
+#endif
         return true;
     static const char* const validChars = "[0-9a-zA-Z_\\-+~!$\\^{}|.%'`#&*]"; // per RFCs: 3023, 2045
     DEFINE_STATIC_LOCAL(RegularExpression, xmlTypeRegExp, (String("^") + validChars + "+/" + validChars + "+\\+xml$", TextCaseSensitive));
